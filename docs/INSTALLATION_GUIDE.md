@@ -12,8 +12,7 @@
 If you previously attempted to install LZaaS CLI or have any conflicting installations, run the uninstallation script first to ensure a clean setup:
 
 ```bash
-# Navigate to the project directory
-cd sse-landing-zone
+# From the repository root directory
 
 # Run the comprehensive uninstallation script
 ./uninstall-lzaas.sh
@@ -104,7 +103,6 @@ lzaas-env\Scripts\activate
 #### **Step 3: Install LZaaS CLI**
 ```bash
 # Ensure you're in the virtual environment (see (lzaas-env) in prompt)
-cd sse-landing-zone/lzaas-cli
 
 # Install in development mode
 pip install -e .
@@ -141,10 +139,7 @@ conda activate lzaas-env
 
 #### **Step 2: Install LZaaS CLI**
 ```bash
-# Navigate to CLI directory
-cd sse-landing-zone/lzaas-cli
-
-# Install LZaaS CLI
+# Navigate to CLI directory and install LZaaS CLI
 pip install -e .
 ```
 
