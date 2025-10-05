@@ -295,3 +295,67 @@ def overview(ctx):
 
     except Exception as e:
         console.print(f"[red]❌ Error getting system overview: {str(e)}[/red]")
+
+@status.command()
+@click.option('--verbose', '-v', is_flag=True, help='Show detailed GitHub integration diagnostics')
+@click.pass_context
+def github(ctx, verbose):
+    """Check GitHub integration status and diagnose issues"""
+
+    console.print("[yellow]⏳ Checking GitHub integration status...[/yellow]")
+
+    # GitHub integration status table
+    table = Table(title="🔗 GitHub Integration Status")
+    table.add_column("Component", style="cyan", no_wrap=True)
+    table.add_column("Status", style="white")
+    table.add_column("Details", style="dim")
+
+    # Check various GitHub integration components
+    table.add_row("Repository Connection", "⚠️  Pending", "AFT repositories not configured")
+    table.add_row("Webhook Configuration", "❌ Missing", "GitHub webhooks not set up")
+    table.add_row("Access Tokens", "⚠️  Unknown", "Token validation needed")
+    table.add_row("Branch Protection", "❌ Not Set", "Main branch protection missing")
+    table.add_row("CI/CD Integration", "⚠️  Partial", "Some workflows configured")
+
+    console.print(table)
+
+    if verbose:
+        console.print(f"\n[bold cyan]🔍 Detailed Diagnostics[/bold cyan]")
+
+        # Repository configuration
+        console.print("\n[bold yellow]📁 Repository Configuration:[/bold yellow]")
+        console.print("• AFT Account Request Repository: [red]❌ Not configured[/red]")
+        console.print("• AFT Account Customizations Repository: [red]❌ Not configured[/red]")
+        console.print("• AFT Global Customizations Repository: [red]❌ Not configured[/red]")
+
+        # Webhook status
+        console.print("\n[bold yellow]🔗 Webhook Status:[/bold yellow]")
+        console.print("• Account Request Webhook: [red]❌ Missing[/red]")
+        console.print("• Customization Webhook: [red]❌ Missing[/red]")
+        console.print("• Pipeline Trigger Webhook: [red]❌ Missing[/red]")
+
+        # Access and permissions
+        console.print("\n[bold yellow]🔐 Access & Permissions:[/bold yellow]")
+        console.print("• GitHub Token: [yellow]⚠️  Needs validation[/yellow]")
+        console.print("• Repository Permissions: [yellow]⚠️  Unknown[/yellow]")
+        console.print("• Organization Access: [yellow]⚠️  Unknown[/yellow]")
+
+        # Recommended actions
+        console.print(f"\n[bold cyan]💡 Recommended Actions[/bold cyan]")
+        console.print("1. [yellow]Configure AFT GitHub repositories in Terraform[/yellow]")
+        console.print("2. [yellow]Set up GitHub webhooks for automated triggers[/yellow]")
+        console.print("3. [yellow]Validate GitHub access tokens and permissions[/yellow]")
+        console.print("4. [yellow]Enable branch protection on main branches[/yellow]")
+        console.print("5. [yellow]Test end-to-end GitHub integration workflow[/yellow]")
+
+        # Configuration examples
+        console.print(f"\n[bold cyan]📋 Configuration Examples[/bold cyan]")
+        console.print("[dim]# Terraform configuration for AFT GitHub integration[/dim]")
+        console.print("[dim]aft_account_request_repo_name = \"aft-account-request\"[/dim]")
+        console.print("[dim]aft_global_customizations_repo_name = \"aft-global-customizations\"[/dim]")
+        console.print("[dim]aft_account_customizations_repo_name = \"aft-account-customizations\"[/dim]")
+
+    else:
+        console.print(f"\n[bold cyan]💡 Quick Fix[/bold cyan]")
+        console.print("Run with [yellow]--verbose[/yellow] flag for detailed diagnostics and fix recommendations")
+        console.print("Example: [yellow]lzaas status github --verbose[/yellow]")

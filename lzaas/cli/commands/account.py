@@ -306,3 +306,90 @@ def templates(template):
 
         console.print(table)
         console.print(f"\n[dim]💡 Use 'lzaas account templates --template <name>' for details[/dim]")
+
+@account.command()
+@click.option('--account-name', help='Specific account name to check status for')
+@click.option('--ou', help='Filter by Organizational Unit (e.g., Sandbox)')
+@click.pass_context
+def status(ctx, account_name, ou):
+    """Check status of accounts and account requests"""
+
+    try:
+        aft_manager = AFTManager(
+            profile=ctx.obj['profile'],
+            region=ctx.obj['region']
+        )
+
+        console.print("[yellow]⏳ Checking account status...[/yellow]")
+
+        if account_name:
+            # Check specific account
+            console.print(f"\n[bold cyan]📋 Account Status: {account_name}[/bold cyan]")
+
+            # Mock data for demonstration - replace with actual AFT queries
+            if account_name.upper() == "SPITZKOP":
+                table = Table()
+                table.add_column("Field", style="cyan", no_wrap=True)
+                table.add_column("Value", style="white")
+
+                table.add_row("Account Name", "SPITZKOP")
+                table.add_row("Account ID", "123456789012")
+                table.add_row("Current OU", "Root")
+                table.add_row("Status", "✅ Active")
+                table.add_row("Created Date", "2024-01-15")
+                table.add_row("Last Updated", "2025-01-08")
+                table.add_row("Migration Status", "⚠️  Pending migration to Sandbox OU")
+
+                console.print(table)
+
+                console.print(f"\n[bold cyan]💡 Recommended Actions[/bold cyan]")
+                console.print("• [yellow]Migrate to Sandbox OU using: lzaas migrate account --account-name SPITZKOP --target-ou Sandbox[/yellow]")
+                console.print("• [yellow]Apply sandbox template: --template sandbox[/yellow]")
+            else:
+                console.print(f"[yellow]📭 Account '{account_name}' not found or no status available[/yellow]")
+        else:
+            # List all accounts with status
+            console.print(f"\n[bold cyan]📋 Account Status Overview[/bold cyan]")
+
+            table = Table()
+            table.add_column("Account Name", style="cyan", no_wrap=True)
+            table.add_column("Account ID", style="green")
+            table.add_column("OU", style="blue")
+            table.add_column("Status", style="white")
+            table.add_column("Template", style="yellow")
+            table.add_column("Last Updated", style="dim")
+
+            # Mock data - replace with actual AFT queries
+            accounts = [
+                {"name": "SPITZKOP", "id": "123456789012", "ou": "Root", "status": "✅ Active", "template": "standalone", "updated": "2025-01-08"},
+                {"name": "dev-environment", "id": "123456789013", "ou": "Development", "status": "✅ Active", "template": "dev", "updated": "2025-01-07"},
+                {"name": "staging-test", "id": "123456789014", "ou": "Staging", "status": "🔄 Updating", "template": "staging", "updated": "2025-01-08"},
+            ]
+
+            # Filter by OU if specified
+            if ou:
+                accounts = [acc for acc in accounts if acc["ou"].lower() == ou.lower()]
+                if not accounts:
+                    console.print(f"[yellow]📭 No accounts found in OU '{ou}'[/yellow]")
+                    return
+
+            for account in accounts:
+                table.add_row(
+                    account["name"],
+                    account["id"],
+                    account["ou"],
+                    account["status"],
+                    account["template"],
+                    account["updated"]
+                )
+
+            console.print(table)
+
+            console.print(f"\n[bold cyan]📊 Summary[/bold cyan]")
+            console.print(f"• Total accounts: {len(accounts)}")
+            if ou:
+                console.print(f"• Filtered by OU: {ou}")
+            console.print("• Use --account-name for detailed status")
+
+    except Exception as e:
+        console.print(f"[red]❌ Error checking account status: {str(e)}[/red]")
