@@ -72,7 +72,7 @@ jobs:
       run: bandit -r lzaas -f json -o bandit-report.json
 
     - name: Safety check
-      run: safety check --json --output safety-report.json
+      run: safety check --json > safety-report.json
 
     - name: Upload security reports
       uses: actions/upload-artifact@v4
