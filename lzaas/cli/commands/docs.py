@@ -93,7 +93,7 @@ def installation():
     """Show installation guide"""
 
     current_dir = Path(__file__).parent.parent.parent.parent
-    install_guide_path = current_dir / "docs" / "LZAAS_INSTALLATION_GUIDE.md"
+    install_guide_path = current_dir / "docs" / "INSTALLATION_GUIDE.md"
 
     if not install_guide_path.exists():
         console.print("[red]❌ Installation guide not found[/red]")

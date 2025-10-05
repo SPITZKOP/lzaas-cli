@@ -4,6 +4,11 @@
 
 A powerful CLI tool for managing AWS Account Factory (AFT) operations through the LZaaS service.
 
+![Version](https://img.shields.io/badge/version-v1.0.0-blue.svg)
+![Status](https://img.shields.io/badge/status-production--ready-green.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![LZaaS](https://img.shields.io/badge/LZaaS-v1.0.0-green.svg)
+
 ## Overview
 
 LZaaS CLI provides a streamlined interface for:
@@ -31,9 +36,14 @@ lzaas docs user-guide
 lzaas account create --template dev --email dev@company.com --client-id your-team
 ```
 
+```bash
+# Uinstall LZaaS CLI
+./uninstall-lzaas.sh
+```
+
 ## Installation
 
-See the [Installation Guide](../docs/LZAAS_INSTALLATION_GUIDE.md) for detailed setup instructions.
+See the [Installation Guide](../docs/INSTALLATION_GUIDE.md) for detailed setup instructions.
 
 ## Documentation
 
@@ -57,10 +67,10 @@ lzaas docs list
 ```
 
 ### Technical Documentation
-- [Installation Guide](../docs/LZAAS_INSTALLATION_GUIDE.md)
-- [Migration Guide](../docs/LZAAS_MIGRATION_GUIDE.md)
-- [LZaaS Internals](../docs/LZAAS_INTERNALS.md)
-- [Release Notes](../docs/LZAAS_V1_1_0_RELEASE_NOTES.md)
+- [Installation Guide](../docs/INSTALLATION_GUIDE.md)
+- [Migration Guide](../docs/MIGRATION_GUIDE.md)
+- [LZaaS Internals](../docs/ARCHITECTURE.md)
+- [Release Notes](RELEASE_NOTES.md)
 
 ## Essential Commands
 
