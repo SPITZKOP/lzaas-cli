@@ -13,7 +13,8 @@ setup(
     name="lzaas-cli",
     use_scm_version={
         "version_scheme": "post-release",
-        "local_scheme": "dirty-tag"
+        "local_scheme": "dirty-tag",
+        "tag_regex": r"^(?P<prefix>v)?(?P<version>[^\+]+?)(?P<suffix>.*)?$"
     },
     setup_requires=['setuptools_scm'],
     author="Platform Team",
