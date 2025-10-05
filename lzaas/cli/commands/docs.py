@@ -25,8 +25,8 @@ def docs():
 def user_guide(browser):
     """Open the complete LZaaS User Guide"""
 
-    # Get the path to the user guide
-    current_dir = Path(__file__).parent.parent.parent
+    # Get the path to the user guide in the lzaas-cli repository docs folder
+    current_dir = Path(__file__).parent.parent.parent.parent
     user_guide_path = current_dir / "docs" / "USER_GUIDE.md"
 
     if not user_guide_path.exists():
@@ -74,7 +74,8 @@ def user_guide(browser):
 def quick_reference():
     """Show quick reference and command cheat sheet"""
 
-    current_dir = Path(__file__).parent.parent.parent
+    # Get the path to the quick reference in the lzaas-cli repository docs folder
+    current_dir = Path(__file__).parent.parent.parent.parent
     quick_ref_path = current_dir / "docs" / "QUICK_REFERENCE.md"
 
     if not quick_ref_path.exists():
@@ -134,7 +135,8 @@ def list():
     console.print("[bold cyan]📚 LZaaS Documentation[/bold cyan]")
     console.print("─" * 60)
 
-    current_dir = Path(__file__).parent.parent.parent
+    # Get the path to the lzaas-cli repository docs folder
+    current_dir = Path(__file__).parent.parent.parent.parent
     docs_dir = current_dir / "docs"
 
     console.print("[bold green]User Documentation:[/bold green]")
