@@ -144,7 +144,7 @@ class AFTManager:
                 return response.get("Items", [])
             else:
                 # Scan table (less efficient but works for all cases)
-                scan_kwargs = {"Limit": limit}
+                scan_kwargs: Dict[str, Any] = {"Limit": limit}
 
                 if status:
                     scan_kwargs["FilterExpression"] = "#status = :status"
