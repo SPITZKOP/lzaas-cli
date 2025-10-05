@@ -225,9 +225,9 @@ class AFTManager:
             # Mock AFT status - in real implementation, this would query AFT resources
             return AFTStatus(
                 request_id=request_id,
-                pipeline_status=request.get("status", "unknown"),
-                account_id=request.get("account_id"),
-                last_updated=request.get("updated_date"),
+                pipeline_status=str(request.get("status", "unknown")),
+                account_id=str(request.get("account_id")) if request.get("account_id") else None,
+                last_updated=str(request.get("updated_date")) if request.get("updated_date") else None,
             )
 
         except Exception as e:
