@@ -31,12 +31,12 @@ jobs:
       run: twine upload dist/*
 
     - name: Create GitHub Release
-      uses: actions/create-release@v1
+      uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        name: Release ${{ github.ref_name }}
         body: |
           ## What's Changed
 
@@ -52,16 +52,8 @@ jobs:
 
           - [User Guide](docs/USER_GUIDE.md)
           - [Quick Reference](docs/QUICK_REFERENCE.md)
-          - [Installation Guide](docs/INSTALLATION.md)
+          - [Installation Methods](INSTALLATION_METHODS.md)
         draft: false
         prerelease: false
-
-    - name: Upload Release Assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/
-        asset_name: lzaas-cli-${{ github.ref_name }}.tar.gz
-        asset_content_type: application/gzip
+        files: |
+          dist/*
