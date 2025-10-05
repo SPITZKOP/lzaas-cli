@@ -43,7 +43,7 @@ lzaas account create --template dev --email dev@company.com --client-id your-tea
 
 ## Installation
 
-See the [Installation Guide](../docs/INSTALLATION_GUIDE.md) for detailed setup instructions.
+See the [Installation Guide](docs/INSTALLATION_GUIDE.md) for detailed setup instructions.
 
 ## Documentation
 
@@ -67,9 +67,9 @@ lzaas docs list
 ```
 
 ### Technical Documentation
-- [Installation Guide](../docs/INSTALLATION_GUIDE.md)
-- [Migration Guide](../docs/MIGRATION_GUIDE.md)
-- [LZaaS Internals](../docs/ARCHITECTURE.md)
+- [Installation Guide](docs/INSTALLATION_GUIDE.md)
+- [Migration Guide](docs/MIGRATION_GUIDE.md)
+- [LZaaS Internals](docs/ARCHITECTURE.md)
 - [Release Notes](RELEASE_NOTES.md)
 
 ## Essential Commands
