@@ -126,14 +126,29 @@ jobs:
         </html>
         EOF
 
-        # Copy all documentation files
-        cp -r docs/* _site/ 2>/dev/null || true
-        cp README.md _site/
-        cp CHANGELOG.md _site/
-        cp CONTRIBUTING.md _site/
-        cp LICENSE _site/
-        cp RELEASE_GUIDE.md _site/
-        cp PRODUCTION_LIFECYCLE_GUIDE.md _site/
+        # Copy all documentation files with proper structure
+        # Create docs directory in _site
+        mkdir -p _site/docs
+
+        # Copy docs directory contents if it exists
+        if [ -d "docs" ]; then
+          cp -r docs/* _site/docs/ 2>/dev/null || true
+        fi
+
+        # Copy root documentation files
+        cp README.md _site/ 2>/dev/null || true
+        cp CHANGELOG.md _site/ 2>/dev/null || true
+        cp CONTRIBUTING.md _site/ 2>/dev/null || true
+        cp LICENSE _site/ 2>/dev/null || true
+        cp RELEASE_GUIDE.md _site/ 2>/dev/null || true
+        cp PRODUCTION_LIFECYCLE_GUIDE.md _site/ 2>/dev/null || true
+        cp INSTALLATION_METHODS.md _site/ 2>/dev/null || true
+        cp PYPI_PACKAGE_MANAGEMENT.md _site/ 2>/dev/null || true
+        cp GITHUB_PAGES_TROUBLESHOOTING.md _site/ 2>/dev/null || true
+
+        # List what was copied for debugging
+        echo "Files copied to _site:"
+        find _site -type f | sort
 
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
