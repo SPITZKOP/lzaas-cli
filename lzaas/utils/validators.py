@@ -3,8 +3,8 @@ Validation utilities for LZaaS CLI
 Email, account names, and other input validation
 """
 
-import re
 import ipaddress
+import re
 from typing import Optional
 
 
@@ -14,7 +14,7 @@ def validate_email(email: str) -> bool:
         return False
 
     # Basic email regex pattern
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     return bool(re.match(pattern, email))
 
 
@@ -48,9 +48,9 @@ def validate_vpc_cidr(cidr: str) -> bool:
 
         # Check if it's in private IP ranges
         private_ranges = [
-            ipaddress.IPv4Network('10.0.0.0/8'),
-            ipaddress.IPv4Network('172.16.0.0/12'),
-            ipaddress.IPv4Network('192.168.0.0/16')
+            ipaddress.IPv4Network("10.0.0.0/8"),
+            ipaddress.IPv4Network("172.16.0.0/12"),
+            ipaddress.IPv4Network("192.168.0.0/16"),
         ]
 
         for private_range in private_ranges:
@@ -69,7 +69,7 @@ def validate_request_id(request_id: str) -> bool:
         return False
 
     # Request ID format: template-YYYY-MM-DD-xxxxxxxx
-    pattern = r'^(dev|prod|sandbox|client)-\d{4}-\d{2}-\d{2}-[a-f0-9]{8}$'
+    pattern = r"^(dev|prod|sandbox|client)-\d{4}-\d{2}-\d{2}-[a-f0-9]{8}$"
     return bool(re.match(pattern, request_id))
 
 
@@ -82,7 +82,7 @@ def validate_client_id(client_id: str) -> bool:
     if len(client_id) < 1 or len(client_id) > 50:
         return False
 
-    pattern = r'^[a-zA-Z0-9_-]+$'
+    pattern = r"^[a-zA-Z0-9_-]+$"
     return bool(re.match(pattern, client_id))
 
 
@@ -95,7 +95,7 @@ def validate_ou_name(ou_name: str) -> bool:
     if len(ou_name) < 1 or len(ou_name) > 128:
         return False
 
-    pattern = r'^[a-zA-Z0-9\s\-\.]+$'
+    pattern = r"^[a-zA-Z0-9\s\-\.]+$"
     return bool(re.match(pattern, ou_name))
 
 
@@ -121,34 +121,40 @@ def get_validation_errors(data: dict) -> list:
     errors = []
 
     # Required fields
-    required_fields = ['email', 'name', 'template']
+    required_fields = ["email", "name", "template"]
     for field in required_fields:
         if not data.get(field):
             errors.append(f"Missing required field: {field}")
 
     # Email validation
-    if data.get('email') and not validate_email(data['email']):
+    if data.get("email") and not validate_email(data["email"]):
         errors.append("Invalid email address format")
 
     # Account name validation
-    if data.get('name') and not validate_account_name(data['name']):
-        errors.append("Invalid account name format (1-50 chars, letters/numbers/spaces/hyphens/periods/apostrophes only)")
+    if data.get("name") and not validate_account_name(data["name"]):
+        errors.append(
+            "Invalid account name format (1-50 chars, letters/numbers/spaces/hyphens/periods/apostrophes only)"
+        )
 
     # Template validation
-    valid_templates = ['dev', 'prod', 'sandbox', 'client']
-    if data.get('template') and data['template'] not in valid_templates:
+    valid_templates = ["dev", "prod", "sandbox", "client"]
+    if data.get("template") and data["template"] not in valid_templates:
         errors.append(f"Invalid template. Must be one of: {', '.join(valid_templates)}")
 
     # VPC CIDR validation
-    if data.get('vpc_cidr') and not validate_vpc_cidr(data['vpc_cidr']):
+    if data.get("vpc_cidr") and not validate_vpc_cidr(data["vpc_cidr"]):
         errors.append("Invalid VPC CIDR (must be /16-/28 in private IP ranges)")
 
     # Client ID validation
-    if data.get('client_id') and not validate_client_id(data['client_id']):
-        errors.append("Invalid client ID format (1-50 chars, alphanumeric/hyphens/underscores only)")
+    if data.get("client_id") and not validate_client_id(data["client_id"]):
+        errors.append(
+            "Invalid client ID format (1-50 chars, alphanumeric/hyphens/underscores only)"
+        )
 
     # OU validation
-    if data.get('ou') and not validate_ou_name(data['ou']):
-        errors.append("Invalid OU name format (1-128 chars, letters/numbers/spaces/hyphens/periods only)")
+    if data.get("ou") and not validate_ou_name(data["ou"]):
+        errors.append(
+            "Invalid OU name format (1-128 chars, letters/numbers/spaces/hyphens/periods only)"
+        )
 
     return errors

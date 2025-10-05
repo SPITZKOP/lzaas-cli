@@ -3,31 +3,35 @@ Migration Commands
 Handle existing account migrations and OU moves
 """
 
-import click
 import boto3
+import click
+from rich import print as rprint
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
-from rich import print as rprint
+from rich.table import Table
 
 from lzaas.core.aft_manager import AFTManager
 from lzaas.utils.validators import validate_email, validate_ou_name
 
 console = Console()
 
+
 @click.group()
 def migrate():
     """Migrate existing accounts and manage OU moves"""
     pass
 
+
 @migrate.command()
-@click.option('--account-id', '-a', required=True, help='AWS Account ID to migrate')
-@click.option('--account-name', '-n', required=True, help='Account name')
-@click.option('--email', '-e', required=True, help='Account email address')
-@click.option('--target-ou', '-o', required=True, help='Target Organizational Unit')
-@click.option('--client-id', '-c', default='migrated', help='Client identifier')
-@click.option('--dry-run', is_flag=True, help='Show what would be done without executing')
+@click.option("--account-id", "-a", required=True, help="AWS Account ID to migrate")
+@click.option("--account-name", "-n", required=True, help="Account name")
+@click.option("--email", "-e", required=True, help="Account email address")
+@click.option("--target-ou", "-o", required=True, help="Target Organizational Unit")
+@click.option("--client-id", "-c", default="migrated", help="Client identifier")
+@click.option(
+    "--dry-run", is_flag=True, help="Show what would be done without executing"
+)
 @click.pass_context
 def account(ctx, account_id, account_name, email, target_ou, client_id, dry_run):
     """Migrate existing account to new OU via AFT"""
@@ -47,10 +51,7 @@ def account(ctx, account_id, account_name, email, target_ou, client_id, dry_run)
         return
 
     try:
-        aft_manager = AFTManager(
-            profile=ctx.obj['profile'],
-            region=ctx.obj['region']
-        )
+        aft_manager = AFTManager(profile=ctx.obj["profile"], region=ctx.obj["region"])
 
         console.print(f"\n[bold cyan]🔄 Account Migration Plan[/bold cyan]")
 
@@ -69,7 +70,9 @@ def account(ctx, account_id, account_name, email, target_ou, client_id, dry_run)
         console.print(migration_table)
 
         if dry_run:
-            console.print(f"\n[yellow]🔍 DRY RUN MODE - No changes will be made[/yellow]")
+            console.print(
+                f"\n[yellow]🔍 DRY RUN MODE - No changes will be made[/yellow]"
+            )
 
             # Show what would be created in AFT
             console.print(f"\n[bold]📋 AFT Account Request (Preview)[/bold]")
@@ -79,53 +82,71 @@ def account(ctx, account_id, account_name, email, target_ou, client_id, dry_run)
                     "AccountName": account_name,
                     "ManagedOrganizationalUnit": target_ou,
                     "SSOUserEmail": email,
-                    "SSOUserFirstName": account_name.split()[0] if ' ' in account_name else account_name,
-                    "SSOUserLastName": account_name.split()[-1] if ' ' in account_name else "User"
+                    "SSOUserFirstName": (
+                        account_name.split()[0] if " " in account_name else account_name
+                    ),
+                    "SSOUserLastName": (
+                        account_name.split()[-1] if " " in account_name else "User"
+                    ),
                 },
                 "account_tags": {
                     "client": client_id,
                     "migration": "true",
-                    "original_account_id": account_id
+                    "original_account_id": account_id,
                 },
                 "account_customizations_name": "migration-customization",
                 "custom_fields": {
                     "migration_source": "existing_account",
                     "original_account_id": account_id,
-                    "migration_date": "2025-01-10"
-                }
+                    "migration_date": "2025-01-10",
+                },
             }
 
             import json
+
             console.print(f"[dim]{json.dumps(aft_request, indent=2)}[/dim]")
 
             console.print(f"\n[bold]⚠️  Important Notes for Migration:[/bold]")
-            console.print("• This creates a NEW account via AFT - it doesn't move the existing account")
+            console.print(
+                "• This creates a NEW account via AFT - it doesn't move the existing account"
+            )
             console.print("• The existing account will remain in its current OU")
-            console.print("• You'll need to manually migrate resources from old to new account")
-            console.print("• Consider using AWS Application Migration Service for resource migration")
-            console.print("• Use 'lzaas migrate existing-ou' for direct OU moves without AFT")
+            console.print(
+                "• You'll need to manually migrate resources from old to new account"
+            )
+            console.print(
+                "• Consider using AWS Application Migration Service for resource migration"
+            )
+            console.print(
+                "• Use 'lzaas migrate existing-ou' for direct OU moves without AFT"
+            )
 
             return
 
         # Confirm before proceeding
-        if not click.confirm(f"\n⚠️  This will create a NEW account via AFT. The existing account {account_id} will remain unchanged. Continue?"):
+        if not click.confirm(
+            f"\n⚠️  This will create a NEW account via AFT. The existing account {account_id} will remain unchanged. Continue?"
+        ):
             console.print("[yellow]Migration cancelled[/yellow]")
             return
 
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
-            console=console
+            console=console,
         ) as progress:
             task = progress.add_task("Creating AFT migration request...", total=None)
 
             # Create account request for migration
-            from lzaas.core.models import AccountRequest
-            from datetime import datetime
             import uuid
+            from datetime import datetime
+
+            from lzaas.core.models import AccountRequest
 
             # Generate request ID for migration
-            request_id = f"migrate-{datetime.now().strftime('%Y-%m-%d')}-{str(uuid.uuid4())[:8]}"
+            request_id = (
+                f"migrate-{datetime.now().strftime('%Y-%m-%d')}-{str(uuid.uuid4())[:8]}"
+            )
 
             migration_request = AccountRequest(
                 request_id=request_id,
@@ -133,13 +154,13 @@ def account(ctx, account_id, account_name, email, target_ou, client_id, dry_run)
                 email=email,
                 name=account_name,
                 client_id=client_id,
-                requested_by=ctx.obj.get('user', 'cli-user'),
+                requested_by=ctx.obj.get("user", "cli-user"),
                 ou=target_ou,
                 customizations={
                     "migration_source": "existing_account",
                     "original_account_id": account_id,
-                    "migration_type": "ou_change"
-                }
+                    "migration_type": "ou_change",
+                },
             )
 
             # Create the request
@@ -147,29 +168,38 @@ def account(ctx, account_id, account_name, email, target_ou, client_id, dry_run)
 
             progress.remove_task(task)
 
-        if result['success']:
-            console.print(f"\n[green]✅ Migration request created successfully![/green]")
+        if result["success"]:
+            console.print(
+                f"\n[green]✅ Migration request created successfully![/green]"
+            )
             console.print(f"[bold]Request ID:[/bold] {result['request_id']}")
 
             console.print(f"\n[bold cyan]📋 Next Steps:[/bold cyan]")
             console.print("1. Monitor the AFT pipeline for new account creation")
             console.print("2. Once new account is ready, plan resource migration")
-            console.print("3. Use AWS Application Migration Service for workload migration")
+            console.print(
+                "3. Use AWS Application Migration Service for workload migration"
+            )
             console.print("4. Update DNS, networking, and access configurations")
             console.print("5. Decommission old account after successful migration")
 
             console.print(f"\n[bold]Monitor progress:[/bold]")
-            console.print(f"[dim]lzaas status check --request-id {result['request_id']}[/dim]")
+            console.print(
+                f"[dim]lzaas status check --request-id {result['request_id']}[/dim]"
+            )
         else:
             console.print(f"[red]❌ Migration request failed: {result['error']}[/red]")
 
     except Exception as e:
         console.print(f"[red]❌ Error creating migration request: {str(e)}[/red]")
 
+
 @migrate.command()
-@click.option('--account-id', '-a', required=True, help='AWS Account ID to move')
-@click.option('--target-ou', '-o', required=True, help='Target Organizational Unit')
-@click.option('--dry-run', is_flag=True, help='Show what would be done without executing')
+@click.option("--account-id", "-a", required=True, help="AWS Account ID to move")
+@click.option("--target-ou", "-o", required=True, help="Target Organizational Unit")
+@click.option(
+    "--dry-run", is_flag=True, help="Show what would be done without executing"
+)
 @click.pass_context
 def existing_ou(ctx, account_id, target_ou, dry_run):
     """Move existing account to different OU (direct Organizations API)"""
@@ -186,24 +216,23 @@ def existing_ou(ctx, account_id, target_ou, dry_run):
     try:
         # Initialize AWS Organizations client
         session = boto3.Session(
-            profile_name=ctx.obj['profile'],
-            region_name=ctx.obj['region']
+            profile_name=ctx.obj["profile"], region_name=ctx.obj["region"]
         )
-        orgs_client = session.client('organizations')
+        orgs_client = session.client("organizations")
 
         console.print(f"\n[bold cyan]🔄 Direct OU Move Operation[/bold cyan]")
 
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
-            console=console
+            console=console,
         ) as progress:
             task = progress.add_task("Gathering account information...", total=None)
 
             # Get current account details
             try:
                 account_info = orgs_client.describe_account(AccountId=account_id)
-                account = account_info['Account']
+                account = account_info["Account"]
             except Exception as e:
                 progress.remove_task(task)
                 console.print(f"[red]❌ Failed to get account info: {str(e)}[/red]")
@@ -212,7 +241,7 @@ def existing_ou(ctx, account_id, target_ou, dry_run):
             # Get current parent (OU or root)
             try:
                 parents = orgs_client.list_parents(ChildId=account_id)
-                current_parent = parents['Parents'][0] if parents['Parents'] else None
+                current_parent = parents["Parents"][0] if parents["Parents"] else None
             except Exception as e:
                 progress.remove_task(task)
                 console.print(f"[red]❌ Failed to get current parent: {str(e)}[/red]")
@@ -222,20 +251,22 @@ def existing_ou(ctx, account_id, target_ou, dry_run):
             try:
                 # List all OUs to find the target
                 target_ou_id = None
-                paginator = orgs_client.get_paginator('list_organizational_units_for_parent')
+                paginator = orgs_client.get_paginator(
+                    "list_organizational_units_for_parent"
+                )
 
                 # Get root ID first
                 roots = orgs_client.list_roots()
-                root_id = roots['Roots'][0]['Id']
+                root_id = roots["Roots"][0]["Id"]
 
                 # Search for OU by name
                 def find_ou_by_name(parent_id, ou_name):
                     for page in paginator.paginate(ParentId=parent_id):
-                        for ou in page['OrganizationalUnits']:
-                            if ou['Name'] == ou_name:
-                                return ou['Id']
+                        for ou in page["OrganizationalUnits"]:
+                            if ou["Name"] == ou_name:
+                                return ou["Id"]
                             # Recursively search in child OUs
-                            child_ou_id = find_ou_by_name(ou['Id'], ou_name)
+                            child_ou_id = find_ou_by_name(ou["Id"], ou_name)
                             if child_ou_id:
                                 return child_ou_id
                     return None
@@ -260,18 +291,24 @@ def existing_ou(ctx, account_id, target_ou, dry_run):
         move_table.add_column("Value", style="white")
 
         move_table.add_row("Account ID", account_id)
-        move_table.add_row("Account Name", account['Name'])
-        move_table.add_row("Account Email", account['Email'])
-        move_table.add_row("Current Parent", current_parent['Id'] if current_parent else 'Unknown')
+        move_table.add_row("Account Name", account["Name"])
+        move_table.add_row("Account Email", account["Email"])
+        move_table.add_row(
+            "Current Parent", current_parent["Id"] if current_parent else "Unknown"
+        )
         move_table.add_row("Target OU", f"{target_ou} ({target_ou_id})")
         move_table.add_row("Operation", "Direct OU Move")
 
         console.print(move_table)
 
         if dry_run:
-            console.print(f"\n[yellow]🔍 DRY RUN MODE - No changes will be made[/yellow]")
+            console.print(
+                f"\n[yellow]🔍 DRY RUN MODE - No changes will be made[/yellow]"
+            )
             console.print(f"\n[bold]Would execute:[/bold]")
-            console.print(f"[dim]aws organizations move-account --account-id {account_id} --source-parent-id {current_parent['Id']} --destination-parent-id {target_ou_id}[/dim]")
+            console.print(
+                f"[dim]aws organizations move-account --account-id {account_id} --source-parent-id {current_parent['Id']} --destination-parent-id {target_ou_id}[/dim]"
+            )
             return
 
         # Confirm before proceeding
@@ -283,19 +320,21 @@ def existing_ou(ctx, account_id, target_ou, dry_run):
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
-            console=console
+            console=console,
         ) as progress:
             task = progress.add_task("Moving account to new OU...", total=None)
 
             try:
                 orgs_client.move_account(
                     AccountId=account_id,
-                    SourceParentId=current_parent['Id'],
-                    DestinationParentId=target_ou_id
+                    SourceParentId=current_parent["Id"],
+                    DestinationParentId=target_ou_id,
                 )
                 progress.remove_task(task)
 
-                console.print(f"\n[green]✅ Account successfully moved to OU '{target_ou}'![/green]")
+                console.print(
+                    f"\n[green]✅ Account successfully moved to OU '{target_ou}'![/green]"
+                )
 
                 console.print(f"\n[bold cyan]📋 Post-Move Checklist:[/bold cyan]")
                 console.print("• Verify account appears in correct OU in AWS Console")
@@ -307,10 +346,13 @@ def existing_ou(ctx, account_id, target_ou, dry_run):
             except Exception as e:
                 progress.remove_task(task)
                 console.print(f"[red]❌ Failed to move account: {str(e)}[/red]")
-                console.print(f"[yellow]💡 This might be due to insufficient permissions or SCP restrictions[/yellow]")
+                console.print(
+                    f"[yellow]💡 This might be due to insufficient permissions or SCP restrictions[/yellow]"
+                )
 
     except Exception as e:
         console.print(f"[red]❌ Error during OU move: {str(e)}[/red]")
+
 
 @migrate.command()
 @click.pass_context
@@ -319,44 +361,51 @@ def list_ous(ctx):
 
     try:
         session = boto3.Session(
-            profile_name=ctx.obj['profile'],
-            region_name=ctx.obj['region']
+            profile_name=ctx.obj["profile"], region_name=ctx.obj["region"]
         )
-        orgs_client = session.client('organizations')
+        orgs_client = session.client("organizations")
 
         console.print(f"\n[bold cyan]📋 Available Organizational Units[/bold cyan]")
 
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
-            console=console
+            console=console,
         ) as progress:
             task = progress.add_task("Fetching organizational structure...", total=None)
 
             # Get root
             roots = orgs_client.list_roots()
-            root_id = roots['Roots'][0]['Id']
-            root_name = roots['Roots'][0]['Name']
+            root_id = roots["Roots"][0]["Id"]
+            root_name = roots["Roots"][0]["Name"]
 
             # Recursively get all OUs
             def get_ous_recursive(parent_id, parent_name, level=0):
                 ous = []
                 try:
-                    paginator = orgs_client.get_paginator('list_organizational_units_for_parent')
+                    paginator = orgs_client.get_paginator(
+                        "list_organizational_units_for_parent"
+                    )
                     for page in paginator.paginate(ParentId=parent_id):
-                        for ou in page['OrganizationalUnits']:
+                        for ou in page["OrganizationalUnits"]:
                             indent = "  " * level
-                            ous.append({
-                                'name': ou['Name'],
-                                'id': ou['Id'],
-                                'level': level,
-                                'display': f"{indent}├─ {ou['Name']} ({ou['Id']})"
-                            })
+                            ous.append(
+                                {
+                                    "name": ou["Name"],
+                                    "id": ou["Id"],
+                                    "level": level,
+                                    "display": f"{indent}├─ {ou['Name']} ({ou['Id']})",
+                                }
+                            )
                             # Recursively get child OUs
-                            child_ous = get_ous_recursive(ou['Id'], ou['Name'], level + 1)
+                            child_ous = get_ous_recursive(
+                                ou["Id"], ou["Name"], level + 1
+                            )
                             ous.extend(child_ous)
                 except Exception as e:
-                    console.print(f"[yellow]Warning: Could not list OUs for {parent_name}: {str(e)}[/yellow]")
+                    console.print(
+                        f"[yellow]Warning: Could not list OUs for {parent_name}: {str(e)}[/yellow]"
+                    )
                 return ous
 
             # Get all OUs
@@ -371,10 +420,12 @@ def list_ous(ctx):
             console.print("[yellow]No Organizational Units found[/yellow]")
         else:
             for ou in all_ous:
-                console.print(ou['display'])
+                console.print(ou["display"])
 
         console.print(f"\n[dim]💡 Use OU names (not IDs) with migration commands[/dim]")
-        console.print(f"[dim]Example: lzaas migrate existing-ou --account-id 198610579545 --target-ou Sandbox[/dim]")
+        console.print(
+            f"[dim]Example: lzaas migrate existing-ou --account-id 198610579545 --target-ou Sandbox[/dim]"
+        )
 
     except Exception as e:
         console.print(f"[red]❌ Error listing OUs: {str(e)}[/red]")

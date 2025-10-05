@@ -3,11 +3,12 @@ AFT Manager - Core AWS Account Factory operations
 Handles DynamoDB operations, GitHub integration, and AFT pipeline management
 """
 
-import boto3
 import json
-import yaml
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
+
+import boto3
+import yaml
 from botocore.exceptions import ClientError, NoCredentialsError
 
 from lzaas.core.models import AccountRequest, AFTStatus
@@ -16,18 +17,18 @@ from lzaas.core.models import AccountRequest, AFTStatus
 class AFTManager:
     """Manages AFT operations and DynamoDB interactions"""
 
-    def __init__(self, profile: str = 'default', region: str = 'eu-west-3'):
+    def __init__(self, profile: str = "default", region: str = "eu-west-3"):
         self.profile = profile
         self.region = region
-        self.table_name = 'lzaas-account-requests'
+        self.table_name = "lzaas-account-requests"
 
         # Initialize AWS clients
         try:
             session = boto3.Session(profile_name=profile, region_name=region)
-            self.dynamodb = session.resource('dynamodb')
-            self.codepipeline = session.client('codepipeline')
-            self.stepfunctions = session.client('stepfunctions')
-            self.s3 = session.client('s3')
+            self.dynamodb = session.resource("dynamodb")
+            self.codepipeline = session.client("codepipeline")
+            self.stepfunctions = session.client("stepfunctions")
+            self.s3 = session.client("s3")
         except (NoCredentialsError, ClientError) as e:
             raise Exception(f"AWS authentication failed: {str(e)}")
 
@@ -39,7 +40,7 @@ class AFTManager:
             table.load()
             return table
         except ClientError as e:
-            if e.response['Error']['Code'] == 'ResourceNotFoundException':
+            if e.response["Error"]["Code"] == "ResourceNotFoundException":
                 # Table doesn't exist, create it
                 return self._create_table()
             else:
@@ -50,46 +51,24 @@ class AFTManager:
         try:
             table = self.dynamodb.create_table(
                 TableName=self.table_name,
-                KeySchema=[
-                    {
-                        'AttributeName': 'request_id',
-                        'KeyType': 'HASH'
-                    }
-                ],
+                KeySchema=[{"AttributeName": "request_id", "KeyType": "HASH"}],
                 AttributeDefinitions=[
-                    {
-                        'AttributeName': 'request_id',
-                        'AttributeType': 'S'
-                    },
-                    {
-                        'AttributeName': 'client_id',
-                        'AttributeType': 'S'
-                    },
-                    {
-                        'AttributeName': 'status',
-                        'AttributeType': 'S'
-                    }
+                    {"AttributeName": "request_id", "AttributeType": "S"},
+                    {"AttributeName": "client_id", "AttributeType": "S"},
+                    {"AttributeName": "status", "AttributeType": "S"},
                 ],
                 GlobalSecondaryIndexes=[
                     {
-                        'IndexName': 'client-status-index',
-                        'KeySchema': [
-                            {
-                                'AttributeName': 'client_id',
-                                'KeyType': 'HASH'
-                            },
-                            {
-                                'AttributeName': 'status',
-                                'KeyType': 'RANGE'
-                            }
+                        "IndexName": "client-status-index",
+                        "KeySchema": [
+                            {"AttributeName": "client_id", "KeyType": "HASH"},
+                            {"AttributeName": "status", "KeyType": "RANGE"},
                         ],
-                        'Projection': {
-                            'ProjectionType': 'ALL'
-                        },
-                        'BillingMode': 'PAY_PER_REQUEST'
+                        "Projection": {"ProjectionType": "ALL"},
+                        "BillingMode": "PAY_PER_REQUEST",
                     }
                 ],
-                BillingMode='PAY_PER_REQUEST'
+                BillingMode="PAY_PER_REQUEST",
             )
 
             # Wait for table to be created
@@ -114,29 +93,29 @@ class AFTManager:
             # 3. Triggering AFT pipeline
 
             return {
-                'success': True,
-                'request_id': account_request.request_id,
-                'message': 'Account request created successfully'
+                "success": True,
+                "request_id": account_request.request_id,
+                "message": "Account request created successfully",
             }
 
         except Exception as e:
-            return {
-                'success': False,
-                'error': str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def get_account_request(self, request_id: str) -> Optional[Dict[str, Any]]:
         """Get account request by ID"""
         try:
             table = self._get_table()
-            response = table.get_item(Key={'request_id': request_id})
-            return response.get('Item')
+            response = table.get_item(Key={"request_id": request_id})
+            return response.get("Item")
         except Exception as e:
             raise Exception(f"Failed to get account request: {str(e)}")
 
-    def list_account_requests(self, client_id: Optional[str] = None,
-                            status: Optional[str] = None,
-                            limit: int = 20) -> List[Dict[str, Any]]:
+    def list_account_requests(
+        self,
+        client_id: Optional[str] = None,
+        status: Optional[str] = None,
+        limit: int = 20,
+    ) -> List[Dict[str, Any]]:
         """List account requests with optional filters"""
         try:
             table = self._get_table()
@@ -144,47 +123,49 @@ class AFTManager:
             if client_id and status:
                 # Use GSI for client_id and status filter
                 response = table.query(
-                    IndexName='client-status-index',
-                    KeyConditionExpression='client_id = :client_id AND #status = :status',
-                    ExpressionAttributeNames={'#status': 'status'},
+                    IndexName="client-status-index",
+                    KeyConditionExpression="client_id = :client_id AND #status = :status",
+                    ExpressionAttributeNames={"#status": "status"},
                     ExpressionAttributeValues={
-                        ':client_id': client_id,
-                        ':status': status
+                        ":client_id": client_id,
+                        ":status": status,
                     },
-                    Limit=limit
+                    Limit=limit,
                 )
-                return response.get('Items', [])
+                return response.get("Items", [])
             elif client_id:
                 # Use GSI for client_id filter only
                 response = table.query(
-                    IndexName='client-status-index',
-                    KeyConditionExpression='client_id = :client_id',
-                    ExpressionAttributeValues={':client_id': client_id},
-                    Limit=limit
+                    IndexName="client-status-index",
+                    KeyConditionExpression="client_id = :client_id",
+                    ExpressionAttributeValues={":client_id": client_id},
+                    Limit=limit,
                 )
-                return response.get('Items', [])
+                return response.get("Items", [])
             else:
                 # Scan table (less efficient but works for all cases)
-                scan_kwargs = {'Limit': limit}
+                scan_kwargs = {"Limit": limit}
 
                 if status:
-                    scan_kwargs['FilterExpression'] = '#status = :status'
-                    scan_kwargs['ExpressionAttributeNames'] = {'#status': 'status'}
-                    scan_kwargs['ExpressionAttributeValues'] = {':status': status}
+                    scan_kwargs["FilterExpression"] = "#status = :status"
+                    scan_kwargs["ExpressionAttributeNames"] = {"#status": "status"}
+                    scan_kwargs["ExpressionAttributeValues"] = {":status": status}
 
                 response = table.scan(**scan_kwargs)
-                return response.get('Items', [])
+                return response.get("Items", [])
 
         except Exception as e:
             raise Exception(f"Failed to list account requests: {str(e)}")
 
-    def update_account_request(self, request_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+    def update_account_request(
+        self, request_id: str, updates: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Update account request"""
         try:
             table = self._get_table()
 
             # Add updated timestamp
-            updates['updated_date'] = datetime.utcnow().isoformat()
+            updates["updated_date"] = datetime.utcnow().isoformat()
 
             # Build update expression
             update_expression = "SET "
@@ -192,57 +173,45 @@ class AFTManager:
             expression_names = {}
 
             for key, value in updates.items():
-                if key == 'status':
+                if key == "status":
                     # Status is a reserved word in DynamoDB
                     update_expression += "#status = :status, "
-                    expression_names['#status'] = 'status'
-                    expression_values[':status'] = value
+                    expression_names["#status"] = "status"
+                    expression_values[":status"] = value
                 else:
                     update_expression += f"{key} = :{key}, "
                     expression_values[f":{key}"] = value
 
             # Remove trailing comma and space
-            update_expression = update_expression.rstrip(', ')
+            update_expression = update_expression.rstrip(", ")
 
             kwargs = {
-                'Key': {'request_id': request_id},
-                'UpdateExpression': update_expression,
-                'ExpressionAttributeValues': expression_values,
-                'ReturnValues': 'ALL_NEW'
+                "Key": {"request_id": request_id},
+                "UpdateExpression": update_expression,
+                "ExpressionAttributeValues": expression_values,
+                "ReturnValues": "ALL_NEW",
             }
 
             if expression_names:
-                kwargs['ExpressionAttributeNames'] = expression_names
+                kwargs["ExpressionAttributeNames"] = expression_names
 
             response = table.update_item(**kwargs)
 
-            return {
-                'success': True,
-                'updated_item': response.get('Attributes')
-            }
+            return {"success": True, "updated_item": response.get("Attributes")}
 
         except Exception as e:
-            return {
-                'success': False,
-                'error': str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def delete_account_request(self, request_id: str) -> Dict[str, Any]:
         """Delete account request"""
         try:
             table = self._get_table()
-            table.delete_item(Key={'request_id': request_id})
+            table.delete_item(Key={"request_id": request_id})
 
-            return {
-                'success': True,
-                'message': f'Account request {request_id} deleted'
-            }
+            return {"success": True, "message": f"Account request {request_id} deleted"}
 
         except Exception as e:
-            return {
-                'success': False,
-                'error': str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def get_aft_status(self, request_id: str) -> Optional[AFTStatus]:
         """Get AFT pipeline status for a request"""
@@ -256,15 +225,17 @@ class AFTManager:
             # Mock AFT status - in real implementation, this would query AFT resources
             return AFTStatus(
                 request_id=request_id,
-                pipeline_status=request.get('status', 'unknown'),
-                account_id=request.get('account_id'),
-                last_updated=request.get('updated_date')
+                pipeline_status=request.get("status", "unknown"),
+                account_id=request.get("account_id"),
+                last_updated=request.get("updated_date"),
             )
 
         except Exception as e:
             raise Exception(f"Failed to get AFT status: {str(e)}")
 
-    def create_aft_repository_files(self, account_request: AccountRequest) -> Dict[str, Any]:
+    def create_aft_repository_files(
+        self, account_request: AccountRequest
+    ) -> Dict[str, Any]:
         """Create AFT repository files for account request"""
         try:
             # Generate AFT-compatible YAML
@@ -279,16 +250,13 @@ class AFTManager:
             # 3. Trigger AFT pipeline
 
             return {
-                'success': True,
-                'file_content': account_file_content,
-                'message': 'AFT repository files prepared (GitHub integration pending)'
+                "success": True,
+                "file_content": account_file_content,
+                "message": "AFT repository files prepared (GitHub integration pending)",
             }
 
         except Exception as e:
-            return {
-                'success': False,
-                'error': str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def list_aft_pipelines(self) -> List[Dict[str, Any]]:
         """List AFT CodePipeline executions"""
@@ -297,19 +265,22 @@ class AFTManager:
             pipelines = []
 
             response = self.codepipeline.list_pipelines()
-            for pipeline in response.get('pipelines', []):
-                pipeline_name = pipeline['name']
-                if 'aft' in pipeline_name.lower():
+            for pipeline in response.get("pipelines", []):
+                pipeline_name = pipeline["name"]
+                if "aft" in pipeline_name.lower():
                     # Get pipeline execution history
                     executions = self.codepipeline.list_pipeline_executions(
-                        pipelineName=pipeline_name,
-                        maxResults=5
+                        pipelineName=pipeline_name, maxResults=5
                     )
 
-                    pipelines.append({
-                        'name': pipeline_name,
-                        'executions': executions.get('pipelineExecutionSummaries', [])
-                    })
+                    pipelines.append(
+                        {
+                            "name": pipeline_name,
+                            "executions": executions.get(
+                                "pipelineExecutionSummaries", []
+                            ),
+                        }
+                    )
 
             return pipelines
 

@@ -5,24 +5,29 @@ Manage account templates and customizations
 
 import click
 import yaml
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
 from rich import print as rprint
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
 
 from lzaas.core.models import ACCOUNT_TEMPLATES
 
 console = Console()
+
 
 @click.group()
 def template():
     """Manage account templates and customizations"""
     pass
 
+
 @template.command()
-@click.option('--template', '-t',
-              type=click.Choice(['dev', 'prod', 'sandbox', 'client']),
-              help='Show specific template details')
+@click.option(
+    "--template",
+    "-t",
+    type=click.Choice(["dev", "prod", "sandbox", "client"]),
+    help="Show specific template details",
+)
 def list(template):
     """List available account templates"""
 
@@ -44,7 +49,7 @@ def list(template):
             f"[dim]Default VPC CIDR:[/dim] {template_obj.vpc_cidr}\n"
             f"[dim]Estimated Cost:[/dim] {template_obj.cost_estimate}",
             title="Template Information",
-            border_style="blue"
+            border_style="blue",
         )
         console.print(info_panel)
 
@@ -60,7 +65,9 @@ def list(template):
 
         # Usage example
         console.print(f"\n[bold]💡 Usage Example:[/bold]")
-        console.print(f"[dim]lzaas account create --template {template} --email your@email.com[/dim]")
+        console.print(
+            f"[dim]lzaas account create --template {template} --email your@email.com[/dim]"
+        )
 
     else:
         # Show all templates
@@ -79,20 +86,31 @@ def list(template):
                 template_obj.name,
                 template_obj.ou,
                 template_obj.cost_estimate,
-                template_obj.description
+                template_obj.description,
             )
 
         console.print(table)
-        console.print(f"\n[dim]💡 Use 'lzaas template list --template <name>' for details[/dim]")
+        console.print(
+            f"\n[dim]💡 Use 'lzaas template list --template <name>' for details[/dim]"
+        )
+
 
 @template.command()
-@click.option('--template', '-t', required=True,
-              type=click.Choice(['dev', 'prod', 'sandbox', 'client']),
-              help='Template to export')
-@click.option('--format', '-f', default='yaml',
-              type=click.Choice(['yaml', 'json']),
-              help='Export format')
-@click.option('--output', '-o', help='Output file (default: stdout)')
+@click.option(
+    "--template",
+    "-t",
+    required=True,
+    type=click.Choice(["dev", "prod", "sandbox", "client"]),
+    help="Template to export",
+)
+@click.option(
+    "--format",
+    "-f",
+    default="yaml",
+    type=click.Choice(["yaml", "json"]),
+    help="Export format",
+)
+@click.option("--output", "-o", help="Output file (default: stdout)")
 def export(template, format, output):
     """Export template configuration"""
 
@@ -104,16 +122,17 @@ def export(template, format, output):
     template_dict = template_obj.to_dict()
 
     # Format output
-    if format == 'yaml':
+    if format == "yaml":
         content = yaml.dump(template_dict, default_flow_style=False, indent=2)
     else:  # json
         import json
+
         content = json.dumps(template_dict, indent=2)
 
     # Output
     if output:
         try:
-            with open(output, 'w') as f:
+            with open(output, "w") as f:
                 f.write(content)
             console.print(f"[green]✅ Template exported to {output}[/green]")
         except Exception as e:
@@ -122,10 +141,15 @@ def export(template, format, output):
         console.print(f"\n[bold cyan]📄 Template: {template}[/bold cyan]")
         console.print(content)
 
+
 @template.command()
-@click.option('--template', '-t', required=True,
-              type=click.Choice(['dev', 'prod', 'sandbox', 'client']),
-              help='Template to validate')
+@click.option(
+    "--template",
+    "-t",
+    required=True,
+    type=click.Choice(["dev", "prod", "sandbox", "client"]),
+    help="Template to validate",
+)
 def validate(template):
     """Validate template configuration"""
 
@@ -158,6 +182,7 @@ def validate(template):
 
     # Validate VPC CIDR
     import ipaddress
+
     try:
         ipaddress.IPv4Network(template_obj.vpc_cidr)
         checks.append(("VPC CIDR", "✅", f"Valid: {template_obj.vpc_cidr}"))
@@ -172,7 +197,9 @@ def validate(template):
 
     # Check customizations
     if template_obj.customizations:
-        checks.append(("Customizations", "✅", f"{len(template_obj.customizations)} setting(s)"))
+        checks.append(
+            ("Customizations", "✅", f"{len(template_obj.customizations)} setting(s)")
+        )
     else:
         checks.append(("Customizations", "⚠️", "No customizations defined"))
 
@@ -193,11 +220,16 @@ def validate(template):
     failed = sum(1 for _, status, _ in checks if status == "❌")
 
     if failed > 0:
-        console.print(f"\n[red]❌ Validation failed: {failed} error(s), {warnings} warning(s)[/red]")
+        console.print(
+            f"\n[red]❌ Validation failed: {failed} error(s), {warnings} warning(s)[/red]"
+        )
     elif warnings > 0:
-        console.print(f"\n[yellow]⚠️  Validation passed with warnings: {warnings} warning(s)[/yellow]")
+        console.print(
+            f"\n[yellow]⚠️  Validation passed with warnings: {warnings} warning(s)[/yellow]"
+        )
     else:
         console.print(f"\n[green]✅ Validation passed: All checks successful[/green]")
+
 
 @template.command()
 def compare():
@@ -220,7 +252,7 @@ def compare():
         ("VPC CIDR", lambda t: t.vpc_cidr),
         ("Cost Estimate", lambda t: t.cost_estimate),
         ("Feature Count", lambda t: str(len(t.features))),
-        ("Customizations", lambda t: str(len(t.customizations)))
+        ("Customizations", lambda t: str(len(t.customizations))),
     ]
 
     for attr_name, attr_func in attributes:
@@ -256,4 +288,6 @@ def compare():
 
     console.print(feature_table)
 
-    console.print(f"\n[dim]💡 Use 'lzaas template list --template <name>' for detailed information[/dim]")
+    console.print(
+        f"\n[dim]💡 Use 'lzaas template list --template <name>' for detailed information[/dim]"
+    )
