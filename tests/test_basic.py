@@ -40,11 +40,11 @@ def test_cli_help():
     from click.testing import CliRunner
 
     runner = CliRunner()
-    result = runner.invoke(cli, ['--help'])
+    result = runner.invoke(cli, ["--help"])
 
     # Should exit with code 0 and contain help text
     assert result.exit_code == 0
-    assert 'Usage:' in result.output
+    assert "Usage:" in result.output
 
 
 def test_template_list():
@@ -52,7 +52,7 @@ def test_template_list():
     from click.testing import CliRunner
 
     runner = CliRunner()
-    result = runner.invoke(cli, ['template', 'list'])
+    result = runner.invoke(cli, ["template", "list"])
 
     # Should not crash (exit code 0 or 1 is acceptable for now)
     assert result.exit_code in [0, 1]
@@ -63,7 +63,7 @@ def test_info_command():
     from click.testing import CliRunner
 
     runner = CliRunner()
-    result = runner.invoke(cli, ['info'])
+    result = runner.invoke(cli, ["info"])
 
     # Should not crash (exit code 0 or 1 is acceptable for now)
     assert result.exit_code in [0, 1]

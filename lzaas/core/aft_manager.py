@@ -226,8 +226,16 @@ class AFTManager:
             return AFTStatus(
                 request_id=request_id,
                 pipeline_status=str(request.get("status", "unknown")),
-                account_id=str(request.get("account_id")) if request.get("account_id") else None,
-                last_updated=str(request.get("updated_date")) if request.get("updated_date") else None,
+                account_id=(
+                    str(request.get("account_id"))
+                    if request.get("account_id")
+                    else None
+                ),
+                last_updated=(
+                    str(request.get("updated_date"))
+                    if request.get("updated_date")
+                    else None
+                ),
             )
 
         except Exception as e:
