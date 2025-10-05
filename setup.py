@@ -11,7 +11,11 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="lzaas-cli",
-    version="1.0.0",
+    use_scm_version={
+        "version_scheme": "post-release",
+        "local_scheme": "dirty-tag"
+    },
+    setup_requires=['setuptools_scm'],
     author="Platform Team",
     author_email="platform@company.com",
     description="Landing Zone as a Service CLI for AWS Account Factory automation",
