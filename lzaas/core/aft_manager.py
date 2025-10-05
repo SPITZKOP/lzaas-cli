@@ -168,9 +168,9 @@ class AFTManager:
             updates["updated_date"] = datetime.utcnow().isoformat()
 
             # Build update expression
-            update_expression = "SET "
-            expression_values = {}
-            expression_names = {}
+            update_expression: str = "SET "
+            expression_values: Dict[str, Any] = {}
+            expression_names: Dict[str, str] = {}
 
             for key, value in updates.items():
                 if key == "status":
