@@ -355,6 +355,174 @@ def existing_ou(ctx, account_id, target_ou, dry_run):
 
 
 @migrate.command()
+@click.option("--source", "-s", required=True, help="Source account name or ID")
+@click.option("--target", "-t", required=True, help="Target OU name")
+@click.option(
+    "--dry-run", is_flag=True, help="Show what would be done without executing"
+)
+@click.pass_context
+def simple(ctx, source, target, dry_run):
+    """Simple migration command for moving accounts to different OUs"""
+
+    console.print(f"\n[bold cyan]🔄 Simple Account Migration[/bold cyan]")
+
+    try:
+        session = boto3.Session(
+            profile_name=ctx.obj["profile"], region_name=ctx.obj["region"]
+        )
+        orgs_client = session.client("organizations")
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Finding source account...", total=None)
+
+            # Find source account
+            account_id = None
+            account_name = None
+
+            if source.isdigit() and len(source) == 12:
+                # Source is account ID
+                account_id = source
+                try:
+                    account_info = orgs_client.describe_account(AccountId=account_id)
+                    account_name = account_info["Account"]["Name"]
+                except Exception as e:
+                    progress.remove_task(task)
+                    console.print(f"[red]❌ Account {account_id} not found: {str(e)}[/red]")
+                    return
+            else:
+                # Source is account name - search for it
+                try:
+                    paginator = orgs_client.get_paginator('list_accounts')
+                    for page in paginator.paginate():
+                        for account in page['Accounts']:
+                            if account['Name'].lower() == source.lower():
+                                account_id = account['Id']
+                                account_name = account['Name']
+                                break
+                        if account_id:
+                            break
+
+                    if not account_id:
+                        progress.remove_task(task)
+                        console.print(f"[red]❌ Account '{source}' not found[/red]")
+                        return
+
+                except Exception as e:
+                    progress.remove_task(task)
+                    console.print(f"[red]❌ Error searching for account: {str(e)}[/red]")
+                    return
+
+            progress.update(task, description="Finding target OU...")
+
+            # Find target OU (reuse logic from existing_ou command)
+            target_ou_id = None
+            try:
+                roots = orgs_client.list_roots()
+                root_id = roots["Roots"][0]["Id"]
+
+                def find_ou_by_name(parent_id, ou_name):
+                    paginator = orgs_client.get_paginator("list_organizational_units_for_parent")
+                    for page in paginator.paginate(ParentId=parent_id):
+                        for ou in page["OrganizationalUnits"]:
+                            if ou["Name"].lower() == ou_name.lower():
+                                return ou["Id"]
+                            child_ou_id = find_ou_by_name(ou["Id"], ou_name)
+                            if child_ou_id:
+                                return child_ou_id
+                    return None
+
+                target_ou_id = find_ou_by_name(root_id, target)
+
+                if not target_ou_id:
+                    progress.remove_task(task)
+                    console.print(f"[red]❌ Target OU '{target}' not found[/red]")
+                    console.print(f"[yellow]💡 Use 'lzaas migrate list-ous' to see available OUs[/yellow]")
+                    return
+
+            except Exception as e:
+                progress.remove_task(task)
+                console.print(f"[red]❌ Error finding target OU: {str(e)}[/red]")
+                return
+
+            progress.update(task, description="Getting current location...")
+
+            # Get current parent
+            try:
+                parents = orgs_client.list_parents(ChildId=account_id)
+                current_parent = parents["Parents"][0] if parents["Parents"] else None
+            except Exception as e:
+                progress.remove_task(task)
+                console.print(f"[red]❌ Failed to get current parent: {str(e)}[/red]")
+                return
+
+            progress.remove_task(task)
+
+        # Display migration plan
+        migration_table = Table(title="Migration Plan")
+        migration_table.add_column("Field", style="cyan", no_wrap=True)
+        migration_table.add_column("Value", style="white")
+
+        migration_table.add_row("Source Account", f"{account_name} ({account_id})")
+        migration_table.add_row("Target OU", f"{target} ({target_ou_id})")
+        migration_table.add_row("Current Parent", current_parent["Id"] if current_parent else "Unknown")
+        migration_table.add_row("Operation", "Direct OU Move")
+
+        console.print(migration_table)
+
+        if dry_run:
+            console.print(f"\n[yellow]🔍 DRY RUN MODE - No changes will be made[/yellow]")
+            console.print(f"\n[bold]Would execute:[/bold]")
+            console.print(f"[dim]Move account {account_id} from {current_parent['Id']} to {target_ou_id}[/dim]")
+            return
+
+        # Confirm before proceeding
+        if not click.confirm(f"\n⚠️  Move '{account_name}' to OU '{target}'?"):
+            console.print("[yellow]Migration cancelled[/yellow]")
+            return
+
+        # Perform the move
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Moving account...", total=None)
+
+            try:
+                orgs_client.move_account(
+                    AccountId=account_id,
+                    SourceParentId=current_parent["Id"],
+                    DestinationParentId=target_ou_id,
+                )
+                progress.remove_task(task)
+
+                console.print(f"\n[green]✅ Successfully moved '{account_name}' to OU '{target}'![/green]")
+
+                console.print(f"\n[bold cyan]📋 Next Steps:[/bold cyan]")
+                console.print("• Verify account appears in correct OU in AWS Console")
+                console.print("• Check that SCPs are applied correctly")
+                console.print("• Update any automation referencing the old OU")
+                console.print("• Verify IAM permissions still work as expected")
+
+            except Exception as e:
+                progress.remove_task(task)
+                console.print(f"[red]❌ Failed to move account: {str(e)}[/red]")
+
+                # Provide helpful error context
+                if "AccessDenied" in str(e):
+                    console.print(f"[yellow]💡 Check that you have organizations:MoveAccount permission[/yellow]")
+                elif "ConstraintViolation" in str(e):
+                    console.print(f"[yellow]💡 This might be due to SCP restrictions or account constraints[/yellow]")
+
+    except Exception as e:
+        console.print(f"[red]❌ Error during migration: {str(e)}[/red]")
+
+
+@migrate.command()
 @click.pass_context
 def list_ous(ctx):
     """List all available Organizational Units"""

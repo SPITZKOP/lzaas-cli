@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from lzaas import __version__
 from lzaas.cli.commands.account import account
+from lzaas.cli.commands.config import config
 from lzaas.cli.commands.docs import docs
 from lzaas.cli.commands.migrate import migrate
 from lzaas.cli.commands.status import status
@@ -57,27 +58,71 @@ def cli(ctx, verbose, profile, region):
 @cli.command()
 def info():
     """Display LZaaS system information and health status"""
+    from lzaas.core.system_checker import system_checker
+
+    console.print("[bold cyan]🔍 Checking system status...[/bold cyan]")
+
+    # Get real-time system status
+    status_data = system_checker.get_system_status()
+    config_status = system_checker.get_configuration_status()
 
     table = Table(title="🏗️  LZaaS System Information")
     table.add_column("Component", style="cyan", no_wrap=True)
     table.add_column("Status", style="green")
     table.add_column("Details", style="white")
 
-    # System info
+    # System info with real-time data
     table.add_row("LZaaS CLI", "✅ Active", f"Version {__version__}")
-    table.add_row("AFT Infrastructure", "✅ Deployed", "Core components operational")
-    table.add_row("GitHub Integration", "⚠️  Pending", "Repositories need setup")
-    table.add_row("DynamoDB", "✅ Ready", "Account requests table available")
+
+    # AWS Connectivity
+    aws_status, aws_details, aws_color = status_data['aws_connectivity']
+    table.add_row("AWS Connectivity", aws_status, aws_details)
+
+    # AFT Infrastructure
+    aft_status, aft_details, aft_color = status_data['aft_infrastructure']
+    table.add_row("AFT Infrastructure", aft_status, aft_details)
+
+    # GitHub Integration
+    github_status, github_details, github_color = status_data['github_integration']
+    table.add_row("GitHub Integration", github_status, github_details)
+
+    # DynamoDB
+    dynamo_status, dynamo_details, dynamo_color = status_data['dynamodb']
+    table.add_row("DynamoDB", dynamo_status, dynamo_details)
+
+    # Template System
+    template_status, template_details, template_color = status_data['template_system']
+    table.add_row("Template System", template_status, template_details)
 
     console.print(table)
+
+    # Configuration status
+    console.print("\n[bold yellow]⚙️  Configuration Status:[/bold yellow]")
+    config_table = Table()
+    config_table.add_column("Component", style="cyan")
+    config_table.add_column("Status", style="green")
+
+    config_table.add_row("General Settings", "✅ Configured" if config_status['general_configured'] else "❌ Not configured")
+    config_table.add_row("AFT Settings", "✅ Configured" if config_status['aft_configured'] else "❌ Not configured")
+    config_table.add_row("GitHub Settings", "✅ Configured" if config_status['github_configured'] else "❌ Not configured")
+    config_table.add_row("AWS Credentials", "✅ Configured" if config_status['aws_credentials'] else "❌ Not configured")
+
+    console.print(config_table)
+
+    # Show configuration help if needed
+    if not all(config_status.values()):
+        console.print("\n[yellow]💡 Run 'lzaas config init' to configure missing settings[/yellow]")
 
     # Quick start guide
     console.print("\n[bold cyan]🚀 Quick Start:[/bold cyan]")
     console.print(
-        "1. [yellow]lzaas account create --template dev --email test@company.com[/yellow]"
+        "1. [yellow]lzaas config init[/yellow] - Configure LZaaS CLI"
     )
-    console.print("2. [yellow]lzaas status --request-id <request-id>[/yellow]")
-    console.print("3. [yellow]lzaas account list[/yellow]")
+    console.print(
+        "2. [yellow]lzaas account create --template dev --email test@company.com[/yellow]"
+    )
+    console.print("3. [yellow]lzaas status --request-id <request-id>[/yellow]")
+    console.print("4. [yellow]lzaas account list[/yellow]")
 
     console.print("\n[bold cyan]📚 Documentation:[/bold cyan]")
     console.print(
@@ -96,6 +141,7 @@ def info():
 
 # Add command groups
 cli.add_command(account)
+cli.add_command(config)
 cli.add_command(template)
 cli.add_command(status)
 cli.add_command(migrate)
