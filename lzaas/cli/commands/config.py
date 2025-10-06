@@ -86,22 +86,22 @@ class ConfigManager:
         """Get default configuration"""
         return {
             'general': {
-                'default_region': 'us-east-1',
+                'default_region': 'eu-west-3',
                 'output_format': 'table',
                 'log_level': 'INFO',
                 'auto_approve': False,
                 'aws_profile': 'default'
             },
             'aft': {
-                'management_account_id': '',
-                'aft_management_account_id': '',
-                'ct_management_account_id': '',
+                'management_account_id': '307946641011',
+                'aft_management_account_id': '307946641011',
+                'ct_management_account_id': '307946641011',
                 'log_archive_account_id': '',
                 'audit_account_id': '',
                 'aft_framework_repo_url': '',
                 'aft_framework_repo_git_ref': '',
                 'vcs_provider': 'github',
-                'account_request_repo_name': '',
+                'account_request_repo_name': 'sse-landing-zone',
                 'global_customizations_repo_name': '',
                 'account_customizations_repo_name': '',
                 'account_provisioning_customizations_repo_name': ''
@@ -109,10 +109,10 @@ class ConfigManager:
             'control_plane': {
                 'type': 'aws_aft',
                 'endpoint': '',
-                'region': 'us-east-1'
+                'region': 'eu-west-3'
             },
             'github': {
-                'organization': '',
+                'organization': 'Cloud-Cockpit',
                 'token': '',  # Will be stored in credentials file
                 'workflows_enabled': True
             },
@@ -263,10 +263,14 @@ def show():
 
     console.print(github_table)
 
-    # Show credentials status
+    # Show credentials status with improved logic
+    from lzaas.core.system_checker import system_checker
+    aws_status, aws_detail = system_checker.get_aws_auth_status()
     creds = config_manager.load_credentials()
+
     console.print("\n[bold yellow]Credentials Status:[/bold yellow]")
-    console.print(f"AWS Credentials: {'✅ Configured' if 'aws' in creds else '❌ Not configured'}")
+    console.print(f"AWS Credentials: {aws_status}")
+    console.print(f"  └─ {aws_detail}")
     console.print(f"GitHub Token: {'✅ Configured' if 'github' in creds else '❌ Not configured'}")
 
     console.print(f"\n[blue]📁 Config location: {config_manager.config_file}[/blue]")

@@ -263,10 +263,25 @@ class SystemHealthChecker:
             github_creds.get('token')
         )
 
-        # Check AWS credentials
-        config_status['aws_credentials'] = 'aws' in self.credentials
+        # Check AWS credentials - consider both explicit credentials AND profiles
+        has_explicit_creds = 'aws' in self.credentials
+        has_profile_config = bool(self.config.get('general', {}).get('aws_profile', 'default') != 'default')
+        config_status['aws_credentials'] = has_explicit_creds or has_profile_config
 
         return config_status
+
+    def get_aws_auth_status(self) -> Tuple[str, str]:
+        """Get AWS authentication status with detailed info"""
+        has_explicit_creds = 'aws' in self.credentials
+        profile_name = self.config.get('general', {}).get('aws_profile', 'default')
+
+        if has_explicit_creds:
+            return "✅ Configured", "Using explicit credentials"
+        elif profile_name != 'default':
+            auth_method = "SSO" if self._is_sso_profile(profile_name) else "Profile"
+            return "✅ Configured", f"Using {auth_method} profile: {profile_name}"
+        else:
+            return "⚠️ Using Default", "Using default credential chain"
 
 
 # Global instance
