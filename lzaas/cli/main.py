@@ -29,8 +29,8 @@ console = Console()
 @click.group()
 @click.version_option(version=__version__)
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
-@click.option("--profile", default="default", help="AWS profile to use")
-@click.option("--region", default="eu-west-3", help="AWS region to use")
+@click.option("--profile", default=None, help="AWS profile to use (overrides config)")
+@click.option("--region", default=None, help="AWS region to use (overrides config)")
 @click.pass_context
 def cli(ctx, verbose, profile, region):
     """
@@ -46,13 +46,29 @@ def cli(ctx, verbose, profile, region):
       lzaas template list
     """
     ctx.ensure_object(dict)
+
+    # Load user configuration and apply precedence: CLI args > User config > Spitzkop defaults
+    from lzaas.cli.commands.config import config_manager
+    user_config = config_manager.load_config()
+
+    # Apply configuration precedence
+    final_profile = profile or user_config.get('general', {}).get('aws_profile', 'lzaas-mgmt-admin')
+    final_region = region or user_config.get('general', {}).get('default_region', 'eu-west-3')
+
     ctx.obj["verbose"] = verbose
-    ctx.obj["profile"] = profile
-    ctx.obj["region"] = region
+    ctx.obj["profile"] = final_profile
+    ctx.obj["region"] = final_region
+    ctx.obj["user_config"] = user_config
 
     if verbose:
-        console.print(f"[green]✓[/green] Using AWS profile: {profile}")
-        console.print(f"[green]✓[/green] Using AWS region: {region}")
+        console.print(f"[green]✓[/green] Using AWS profile: {final_profile}")
+        console.print(f"[green]✓[/green] Using AWS region: {final_region}")
+        if profile:
+            console.print(f"[dim]  └─ Profile overridden via CLI argument[/dim]")
+        elif user_config.get('general', {}).get('aws_profile'):
+            console.print(f"[dim]  └─ Profile loaded from user configuration[/dim]")
+        else:
+            console.print(f"[dim]  └─ Using Spitzkop default profile[/dim]")
 
 
 @cli.command()

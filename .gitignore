@@ -8,6 +8,8 @@ __pycache__/
 
 #documents-helpers 
 documents-helpers/
+README.md.back
+
 # Distribution / packaging
 .Python
 build/
@@ -111,6 +113,8 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+lzaas-test-env/
+lzaas-env/
 
 # Spyder project settings
 .spyderproject

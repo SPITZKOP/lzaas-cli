@@ -90,7 +90,7 @@ class ConfigManager:
                 'output_format': 'table',
                 'log_level': 'INFO',
                 'auto_approve': False,
-                'aws_profile': 'default'
+                'aws_profile': 'lzaas-mgmt-admin'
             },
             'aft': {
                 'management_account_id': '307946641011',
@@ -361,9 +361,11 @@ def validate():
         if not config_data.get('aft', {}).get(field):
             issues.append(f"AFT setting '{field}' is not configured")
 
-    # Check AWS credentials
-    if 'aws' not in creds:
-        issues.append("AWS credentials are not configured")
+    # Check AWS credentials - improved logic for SSO profiles
+    from lzaas.core.system_checker import system_checker
+    aws_status, aws_detail = system_checker.get_aws_auth_status()
+    if "❌" in aws_status:
+        issues.append("AWS credentials are not configured or accessible")
 
     # Check GitHub configuration
     if not config_data.get('github', {}).get('organization'):

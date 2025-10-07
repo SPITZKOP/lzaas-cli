@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 LZaaS CLI Tool Setup
-Landing Zone as a Service - Account Factory Automation
+Landing Zone as a Service - Account Factory Automation Command Line Interface
 """
 
 from setuptools import setup, find_packages
@@ -17,12 +17,12 @@ setup(
         "tag_regex": r"^(?P<prefix>v)?(?P<version>[^\+]+?)(?P<suffix>.*)?$"
     },
     setup_requires=['setuptools_scm'],
-    author="Platform Team",
-    author_email="platform@company.com",
-    description="Landing Zone as a Service CLI for AWS Account Factory automation",
+    author="SSE Platform Team",
+    author_email="platform@spitzkop.io",
+    description="Landing Zone as a Service - AWS Account Factory Automation Command Line Interface"
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/your-org/sse-landing-zone",
+    url="https://github.com/SPITZKOP/lzaas-cli",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",
