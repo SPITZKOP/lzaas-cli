@@ -7,15 +7,31 @@ on:
     branches: [ main ]
   workflow_dispatch:  # Allow manual triggering
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   format:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     steps:
+    # Generate GitHub App token if App credentials are available
+    - name: Generate GitHub App Token
+      id: app-token
+      if: ${{ secrets.APP_ID && secrets.APP_PRIVATE_KEY && secrets.APP_INSTALLATION_ID }}
+      uses: actions/create-github-app-token@v1
+      with:
+        app-id: ${{ secrets.APP_ID }}
+        private-key: ${{ secrets.APP_PRIVATE_KEY }}
+        installation-id: ${{ secrets.APP_INSTALLATION_ID }}
+
+    # Checkout with GitHub App token (preferred), PAT (fallback), or GITHUB_TOKEN (last resort)
     - uses: actions/checkout@v4
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ steps.app-token.outputs.token || secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
 
     - name: Set up Python
       uses: actions/setup-python@v4

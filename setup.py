@@ -19,7 +19,7 @@ setup(
     setup_requires=['setuptools_scm'],
     author="SSE Platform Team",
     author_email="platform@spitzkop.io",
-    description="Landing Zone as a Service - AWS Account Factory Automation Command Line Interface"
+    description="Landing Zone as a Service - AWS Account Factory Automation Command Line Interface",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/SPITZKOP/lzaas-cli",

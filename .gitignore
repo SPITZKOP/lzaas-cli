@@ -9,6 +9,7 @@ __pycache__/
 #documents-helpers 
 documents-helpers/
 README.md.back
+GITHUB_ACTIONS_TROUBLESHOOTING.md
 
 # Distribution / packaging
 .Python
