@@ -30,7 +30,45 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
       run: twine upload dist/*
 
-    - name: Create GitHub Release
+    - name: Generate GitHub App Token
+      id: github_app_token
+      uses: actions/create-github-app-token@v1
+      with:
+        app-id: ${{ secrets.APP_ID }}
+        private-key: ${{ secrets.APP_PRIVATE_KEY }}
+      continue-on-error: true
+
+    - name: Create GitHub Release (with App Token)
+      if: steps.github_app_token.outcome == 'success'
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ steps.github_app_token.outputs.token }}
+      with:
+        tag_name: ${{ github.ref }}
+        name: Release ${{ github.ref_name }}
+        body: |
+          ## What's Changed
+
+          See [CHANGELOG.md](CHANGELOG.md) for detailed changes.
+
+          ## Installation
+
+          ```bash
+          pip install lzaas-cli==${{ github.ref_name }}
+          ```
+
+          ## Documentation
+
+          - [User Guide](docs/USER_GUIDE.md)
+          - [Quick Reference](docs/QUICK_REFERENCE.md)
+          - [Installation Methods](INSTALLATION_METHODS.md)
+        draft: false
+        prerelease: false
+        files: |
+          dist/*
+
+    - name: Create GitHub Release (Fallback with GITHUB_TOKEN)
+      if: steps.github_app_token.outcome != 'success'
       uses: softprops/action-gh-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -57,3 +95,21 @@ jobs:
         prerelease: false
         files: |
           dist/*
+      continue-on-error: true
+
+    - name: Release Status
+      run: |
+        if [[ "${{ steps.github_app_token.outcome }}" == "success" ]]; then
+          echo "✅ GitHub release created successfully using GitHub App token"
+        else
+          echo "⚠️ GitHub App token not available, attempted fallback with GITHUB_TOKEN"
+          if [[ "${{ job.status }}" == "success" ]]; then
+            echo "✅ Fallback succeeded"
+          else
+            echo "❌ Both GitHub App and GITHUB_TOKEN failed"
+            echo "📦 PyPI package was uploaded successfully"
+            echo "🔧 Manual release creation may be required"
+            echo "Release tag: ${{ github.ref_name }}"
+            echo "Package: https://pypi.org/project/lzaas-cli/${{ github.ref_name }}/"
+          fi
+        fi
