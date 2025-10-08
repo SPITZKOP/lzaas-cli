@@ -2,7 +2,7 @@
 
 ## 🚀 Initial Public Release
 
-**Release Date**: October O1, 2025
+**Release Date**: October O8, 2025
 **Repository**: https://github.com/SPITZKOP/lzaas-cli
 
 ### ✨ **New Features**
