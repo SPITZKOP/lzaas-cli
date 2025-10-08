@@ -17,10 +17,26 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     steps:
-    # Generate GitHub App token if App credentials are available
+    # Check for all GitHub App secrets
+    - name: Check for GitHub App secrets
+      id: check-secrets
+      run: |
+        if [[ -n "${{ secrets.APP_ID }}" && -n "${{ secrets.APP_PRIVATE_KEY }}" && -n "${{ secrets.APP_INSTALLATION_ID }}" ]]; then
+          echo "github_app_available=true" >> $GITHUB_OUTPUT
+        else
+          echo "github_app_available=false" >> $GITHUB_OUTPUT
+        fi
+
+        if [[ -n "${{ secrets.PAT_TOKEN }}" ]]; then
+          echo "pat_available=true" >> $GITHUB_OUTPUT
+        else
+          echo "pat_available=false" >> $GITHUB_OUTPUT
+        fi
+
+    # Generate GitHub App token if all secrets are available
     - name: Generate GitHub App Token
       id: app-token
-      if: ${{ secrets.APP_ID && secrets.APP_PRIVATE_KEY && secrets.APP_INSTALLATION_ID }}
+      if: steps.check-secrets.outputs.github_app_available == 'true'
       uses: actions/create-github-app-token@v1
       with:
         app-id: ${{ secrets.APP_ID }}
@@ -35,9 +51,9 @@ jobs:
         token: ${{ steps.app-token.outputs.token }}
         fetch-depth: 0
 
-    # Checkout with PAT (if no GitHub App token and PAT exists)
+    # Checkout with PAT (if no GitHub App token but PAT exists)
     - name: Checkout with PAT
-      if: ${{ !steps.app-token.outputs.token && secrets.PAT_TOKEN }}
+      if: ${{ !steps.app-token.outputs.token && steps.check-secrets.outputs.pat_available == 'true' }}
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.PAT_TOKEN }}
@@ -45,7 +61,7 @@ jobs:
 
     # Checkout with GITHUB_TOKEN (fallback)
     - name: Checkout with GITHUB_TOKEN
-      if: ${{ !steps.app-token.outputs.token && !secrets.PAT_TOKEN }}
+      if: ${{ !steps.app-token.outputs.token && steps.check-secrets.outputs.pat_available == 'false' }}
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}

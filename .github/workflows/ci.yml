@@ -71,7 +71,7 @@ jobs:
         pip install bandit safety
 
     - name: Security check with bandit
-      run: bandit -r lzaas -f json -o bandit-report.json
+      run: bandit -r lzaas -f json -o bandit-report.json --configfile .bandit
 
     - name: Safety check
       run: safety check --json > safety-report.json
