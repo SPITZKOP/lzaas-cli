@@ -41,7 +41,6 @@ jobs:
       with:
         app-id: ${{ secrets.APP_ID }}
         private-key: ${{ secrets.APP_PRIVATE_KEY }}
-        installation-id: ${{ secrets.APP_INSTALLATION_ID }}
 
     # Checkout with GitHub App token (if available)
     - name: Checkout with GitHub App
