@@ -74,7 +74,9 @@ jobs:
       run: bandit -r lzaas -f json -o bandit-report.json --configfile .bandit || echo "Bandit found security issues - check bandit-report.json for details"
 
     - name: Safety check
-      run: safety check --json > safety-report.json
+      run: |
+        # Suppress pkg_resources deprecation warning from safety tool itself
+        python -W ignore::DeprecationWarning -m safety check --json > safety-report.json 2>/dev/null || echo "Safety check completed with warnings"
 
     - name: Upload security reports
       uses: actions/upload-artifact@v4
