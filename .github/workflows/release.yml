@@ -4,12 +4,29 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:  # Allow manual triggering
+    inputs:
+      tag_name:
+        description: 'Tag name for the release (e.g., v1.0.2)'
+        required: true
+        default: 'v1.0.2'
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+
+    - name: Set release tag
+      id: set_tag
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          echo "tag_name=${{ github.event.inputs.tag_name }}" >> $GITHUB_OUTPUT
+          echo "ref_name=${{ github.event.inputs.tag_name }}" >> $GITHUB_OUTPUT
+        else
+          echo "tag_name=${{ github.ref }}" >> $GITHUB_OUTPUT
+          echo "ref_name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+        fi
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -45,8 +62,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ steps.github_app_token.outputs.token }}
       with:
-        tag_name: ${{ github.ref }}
-        name: Release ${{ github.ref_name }}
+        tag_name: ${{ steps.set_tag.outputs.tag_name }}
+        name: Release ${{ steps.set_tag.outputs.ref_name }}
         body: |
           ## What's Changed
 
@@ -55,7 +72,7 @@ jobs:
           ## Installation
 
           ```bash
-          pip install lzaas-cli==${{ github.ref_name }}
+          pip install lzaas-cli==${{ steps.set_tag.outputs.ref_name }}
           ```
 
           ## Documentation
@@ -74,8 +91,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
-        name: Release ${{ github.ref_name }}
+        tag_name: ${{ steps.set_tag.outputs.tag_name }}
+        name: Release ${{ steps.set_tag.outputs.ref_name }}
         body: |
           ## What's Changed
 
@@ -84,7 +101,7 @@ jobs:
           ## Installation
 
           ```bash
-          pip install lzaas-cli==${{ github.ref_name }}
+          pip install lzaas-cli==${{ steps.set_tag.outputs.ref_name }}
           ```
 
           ## Documentation
