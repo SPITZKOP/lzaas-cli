@@ -300,11 +300,13 @@ def set(key: str, value: str):
 
     # Try to convert value to appropriate type
     if value.lower() in ("true", "false"):
-        value = value.lower() == "true"
+        converted_value: Any = value.lower() == "true"
     elif value.isdigit():
-        value = int(value)
+        converted_value = int(value)
+    else:
+        converted_value = value
 
-    current[final_key] = value
+    current[final_key] = converted_value
 
     if config_manager.save_config(config_data):
         console.print(f"[green]✅ Set {key} = {value}[/green]")

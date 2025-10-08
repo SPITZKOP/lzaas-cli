@@ -701,8 +701,8 @@ resource "aws_organizations_account" "account_{account_id}" {{
             # Mock migration status data
             # In real implementation, this would query AFT DynamoDB tables
 
-            ongoing_migrations = []
-            recent_migrations = []
+            ongoing_migrations: List[Dict[str, Any]] = []
+            recent_migrations: List[Dict[str, Any]] = []
 
             # Mock some data for demonstration
             if (
