@@ -5,6 +5,19 @@ All notable changes to the LZaaS CLI project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-10-08
+
+### 🔧 Fixed
+- **PyPI Release Issue**: Resolved PyPI filename conflict from previous upload attempt
+- **Package Management**: Updated version to bypass PyPI's filename reuse restriction
+
+### 📝 Notes
+- This is a patch release to resolve PyPI upload conflicts
+- All functionality remains identical to v1.0.0
+- No code changes, only version bump for successful PyPI publication
+
+---
+
 ## [1.0.0] - 2025-10-08
 
 ### 🎉 Initial Release
