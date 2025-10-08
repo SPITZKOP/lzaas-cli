@@ -303,11 +303,11 @@ class AFTManager:
             organizations = session.client("organizations")
 
             # List all accounts in the organization
-            paginator = organizations.get_paginator('list_accounts')
+            paginator = organizations.get_paginator("list_accounts")
 
             for page in paginator.paginate():
-                for account in page['Accounts']:
-                    if account['Name'].lower() == account_name.lower():
+                for account in page["Accounts"]:
+                    if account["Name"].lower() == account_name.lower():
                         return account
 
             return None
@@ -323,10 +323,10 @@ class AFTManager:
 
             # Get account details
             response = organizations.describe_account(AccountId=account_id)
-            return response.get('Account')
+            return response.get("Account")
 
         except ClientError as e:
-            if e.response['Error']['Code'] == 'AccountNotFoundException':
+            if e.response["Error"]["Code"] == "AccountNotFoundException":
                 return None
             raise Exception(f"Failed to find account by ID: {str(e)}")
         except Exception as e:
@@ -339,24 +339,26 @@ class AFTManager:
             organizations = session.client("organizations")
 
             # Get root ID first
-            roots = organizations.list_roots()['Roots']
+            roots = organizations.list_roots()["Roots"]
             if not roots:
                 return None
 
-            root_id = roots[0]['Id']
+            root_id = roots[0]["Id"]
 
             # Search for OU recursively
             def search_ou_recursive(parent_id: str) -> Optional[Dict[str, Any]]:
                 try:
-                    paginator = organizations.get_paginator('list_organizational_units_for_parent')
+                    paginator = organizations.get_paginator(
+                        "list_organizational_units_for_parent"
+                    )
 
                     for page in paginator.paginate(ParentId=parent_id):
-                        for ou in page['OrganizationalUnits']:
-                            if ou['Name'].lower() == ou_name.lower():
+                        for ou in page["OrganizationalUnits"]:
+                            if ou["Name"].lower() == ou_name.lower():
                                 return ou
 
                             # Search recursively in child OUs
-                            child_result = search_ou_recursive(ou['Id'])
+                            child_result = search_ou_recursive(ou["Id"])
                             if child_result:
                                 return child_result
 
@@ -377,7 +379,7 @@ class AFTManager:
 
             # List parents for the account
             response = organizations.list_parents(ChildId=account_id)
-            parents = response.get('Parents', [])
+            parents = response.get("Parents", [])
 
             if not parents:
                 return None
@@ -385,17 +387,21 @@ class AFTManager:
             parent = parents[0]  # Account should have only one parent
 
             # Get parent details
-            if parent['Type'] == 'ROOT':
-                roots = organizations.list_roots()['Roots']
+            if parent["Type"] == "ROOT":
+                roots = organizations.list_roots()["Roots"]
                 for root in roots:
-                    if root['Id'] == parent['Id']:
-                        return {'Id': root['Id'], 'Name': 'Root', 'Type': 'ROOT'}
-            elif parent['Type'] == 'ORGANIZATIONAL_UNIT':
+                    if root["Id"] == parent["Id"]:
+                        return {"Id": root["Id"], "Name": "Root", "Type": "ROOT"}
+            elif parent["Type"] == "ORGANIZATIONAL_UNIT":
                 ou_response = organizations.describe_organizational_unit(
-                    OrganizationalUnitId=parent['Id']
+                    OrganizationalUnitId=parent["Id"]
                 )
-                ou = ou_response['OrganizationalUnit']
-                return {'Id': ou['Id'], 'Name': ou['Name'], 'Type': 'ORGANIZATIONAL_UNIT'}
+                ou = ou_response["OrganizationalUnit"]
+                return {
+                    "Id": ou["Id"],
+                    "Name": ou["Name"],
+                    "Type": "ORGANIZATIONAL_UNIT",
+                }
 
             return parent
 
@@ -409,29 +415,33 @@ class AFTManager:
             organizations = session.client("organizations")
 
             # Get root
-            roots = organizations.list_roots()['Roots']
+            roots = organizations.list_roots()["Roots"]
             if not roots:
-                return {'root': None, 'ous': []}
+                return {"root": None, "ous": []}
 
             root = roots[0]
 
             # Get all OUs recursively
-            def get_ous_recursive(parent_id: str, level: int = 0) -> List[Dict[str, Any]]:
+            def get_ous_recursive(
+                parent_id: str, level: int = 0
+            ) -> List[Dict[str, Any]]:
                 ous = []
                 try:
-                    paginator = organizations.get_paginator('list_organizational_units_for_parent')
+                    paginator = organizations.get_paginator(
+                        "list_organizational_units_for_parent"
+                    )
 
                     for page in paginator.paginate(ParentId=parent_id):
-                        for ou in page['OrganizationalUnits']:
+                        for ou in page["OrganizationalUnits"]:
                             ou_info = {
-                                'id': ou['Id'],
-                                'name': ou['Name'],
-                                'level': level
+                                "id": ou["Id"],
+                                "name": ou["Name"],
+                                "level": level,
                             }
                             ous.append(ou_info)
 
                             # Get child OUs
-                            child_ous = get_ous_recursive(ou['Id'], level + 1)
+                            child_ous = get_ous_recursive(ou["Id"], level + 1)
                             ous.extend(child_ous)
 
                 except Exception:
@@ -439,12 +449,9 @@ class AFTManager:
 
                 return ous
 
-            all_ous = get_ous_recursive(root['Id'])
+            all_ous = get_ous_recursive(root["Id"])
 
-            return {
-                'root': {'id': root['Id'], 'name': root['Name']},
-                'ous': all_ous
-            }
+            return {"root": {"id": root["Id"], "name": root["Name"]}, "ous": all_ous}
 
         except Exception as e:
             raise Exception(f"Failed to get organizational structure: {str(e)}")
@@ -453,30 +460,36 @@ class AFTManager:
         self,
         account_info: Dict[str, Any],
         target_ou: Dict[str, Any],
-        current_parent: Dict[str, Any]
+        current_parent: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Prepare Git repository changes for account migration with corrected architecture"""
         try:
             # Generate the changes that would be made to repository files
-            account_name = account_info['Name']
-            account_id = account_info['Id']
-            target_ou_name = target_ou['Name']
+            account_name = account_info["Name"]
+            account_id = account_info["Id"]
+            target_ou_name = target_ou["Name"]
 
             # Use account ID as unique identifier (no client name assumptions)
             changes = {
-                'files': {
-                    f'terraform/live/account-factory/lzaas-account-{account_id}.tf': 'create/update',
-                    f'terraform/live/account-factory/lzaas-metadata.tf': 'update',
-                    f'terraform/live/account-factory/.lzaas-managed': 'update'
+                "files": {
+                    f"terraform/live/account-factory/lzaas-account-{account_id}.tf": "create/update",
+                    f"terraform/live/account-factory/lzaas-metadata.tf": "update",
+                    f"terraform/live/account-factory/.lzaas-managed": "update",
                 },
-                'terraform_content': self._generate_account_terraform(account_info, target_ou),
-                'metadata_content': self._generate_lzaas_metadata(account_info, target_ou),
-                'managed_files_content': self._generate_managed_files_list(account_id),
-                'terraform_preview': self._generate_terraform_preview(account_info, target_ou),
-                'pr_details': {
-                    'branch_name': f'migrate-{account_id}-to-{target_ou_name.lower()}',
-                    'title': f'Migrate account {account_id} ({account_name}) to {target_ou_name} OU',
-                    'description': f'''
+                "terraform_content": self._generate_account_terraform(
+                    account_info, target_ou
+                ),
+                "metadata_content": self._generate_lzaas_metadata(
+                    account_info, target_ou
+                ),
+                "managed_files_content": self._generate_managed_files_list(account_id),
+                "terraform_preview": self._generate_terraform_preview(
+                    account_info, target_ou
+                ),
+                "pr_details": {
+                    "branch_name": f"migrate-{account_id}-to-{target_ou_name.lower()}",
+                    "title": f"Migrate account {account_id} ({account_name}) to {target_ou_name} OU",
+                    "description": f"""
 # Account Migration
 
 **Account**: {account_name} ({account_id})
@@ -498,8 +511,8 @@ This PR will trigger the AFT pipeline to move the account to the new OU.
 The migration will be processed automatically when this PR is merged.
 
 Generated by LZaaS CLI v{self._get_cli_version()}
-                    '''
-                }
+                    """,
+                },
             }
 
             return changes
@@ -507,15 +520,17 @@ Generated by LZaaS CLI v{self._get_cli_version()}
         except Exception as e:
             raise Exception(f"Failed to prepare migration changes: {str(e)}")
 
-    def _generate_account_terraform(self, account_info: Dict[str, Any], target_ou: Dict[str, Any]) -> str:
+    def _generate_account_terraform(
+        self, account_info: Dict[str, Any], target_ou: Dict[str, Any]
+    ) -> str:
         """Generate Terraform content for account-specific file"""
-        account_name = account_info['Name']
-        account_id = account_info['Id']
-        target_ou_name = target_ou['Name']
+        account_name = account_info["Name"]
+        account_id = account_info["Id"]
+        target_ou_name = target_ou["Name"]
         timestamp = datetime.utcnow().isoformat()
         operation_id = self._generate_operation_id()
 
-        return f'''# lzaas-account-{account_id}.tf
+        return f"""# lzaas-account-{account_id}.tf
 # Generated by LZaaS CLI - DO NOT EDIT MANUALLY
 # Account: {account_name} ({account_id})
 # Last Updated: {timestamp}
@@ -545,16 +560,18 @@ output "account_{account_id}_details" {{
     environment  = "{target_ou_name.lower()}"
   }}
 }}
-'''
+"""
 
-    def _generate_lzaas_metadata(self, account_info: Dict[str, Any], target_ou: Dict[str, Any]) -> str:
+    def _generate_lzaas_metadata(
+        self, account_info: Dict[str, Any], target_ou: Dict[str, Any]
+    ) -> str:
         """Generate LZaaS metadata file content"""
-        account_name = account_info['Name']
-        account_id = account_info['Id']
+        account_name = account_info["Name"]
+        account_id = account_info["Id"]
         timestamp = datetime.utcnow().isoformat()
         operation_id = self._generate_operation_id()
 
-        return f'''# LZaaS Operational Metadata
+        return f"""# LZaaS Operational Metadata
 # This file tracks LZaaS CLI operations and should not be edited manually
 
 locals {{
@@ -581,13 +598,13 @@ output "lzaas_last_operation" {{
   description = "Details of the last LZaaS operation"
   value       = local.lzaas_operations.last_migration
 }}
-'''
+"""
 
     def _generate_managed_files_list(self, account_id: str) -> str:
         """Generate the .lzaas-managed file content"""
         timestamp = datetime.utcnow().isoformat()
 
-        return f'''# Files managed by LZaaS CLI - DO NOT EDIT MANUALLY
+        return f"""# Files managed by LZaaS CLI - DO NOT EDIT MANUALLY
 # This file tracks which files are automatically managed by the LZaaS CLI
 # to prevent Git conflicts between human and automated changes
 
@@ -604,16 +621,18 @@ cli_version: "{self._get_cli_version()}"
 # - Use 'lzaas' commands to modify account configurations
 # - Human-maintained files: main.tf, variables.tf, terraform.tfvars
 # - For questions about LZaaS-managed files, use: lzaas docs
-'''
+"""
 
-    def _generate_terraform_preview(self, account_info: Dict[str, Any], target_ou: Dict[str, Any]) -> str:
+    def _generate_terraform_preview(
+        self, account_info: Dict[str, Any], target_ou: Dict[str, Any]
+    ) -> str:
         """Generate Terraform preview for display purposes"""
-        account_name = account_info['Name']
-        account_id = account_info['Id']
-        target_ou_name = target_ou['Name']
+        account_name = account_info["Name"]
+        account_id = account_info["Id"]
+        target_ou_name = target_ou["Name"]
         timestamp = datetime.utcnow().isoformat()
 
-        return f'''
+        return f"""
 # Account Migration: {account_name} -> {target_ou_name}
 # File: lzaas-account-{account_id}.tf
 
@@ -630,11 +649,12 @@ resource "aws_organizations_account" "account_{account_id}" {{
     LastMigration = "{timestamp}"
   }}
 }}
-'''
+"""
 
     def _generate_operation_id(self) -> str:
         """Generate a unique operation ID for tracking"""
         import uuid
+
         return str(uuid.uuid4())[:8]
 
     def execute_git_migration(
@@ -643,7 +663,7 @@ resource "aws_organizations_account" "account_{account_id}" {{
         target_ou: Dict[str, Any],
         repo_changes: Dict[str, Any],
         github_config: Dict[str, Any],
-        aft_config: Dict[str, Any]
+        aft_config: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Execute Git-based migration by creating PR (v1.0.0 - Mock Implementation)"""
         try:
@@ -651,35 +671,30 @@ resource "aws_organizations_account" "account_{account_id}" {{
             # This provides a complete preview of what would happen without actual changes
             # Real GitHub integration will be implemented in the next release
 
-            account_name = account_info['Name']
-            account_id = account_info['Id']
-            target_ou_name = target_ou['Name']
-            branch_name = repo_changes['pr_details']['branch_name']
+            account_name = account_info["Name"]
+            account_id = account_info["Id"]
+            target_ou_name = target_ou["Name"]
+            branch_name = repo_changes["pr_details"]["branch_name"]
 
             # MOCK RESPONSE - Beautiful output, no actual repository modifications
             mock_pr_url = f"https://github.com/{github_config['organization']}/{aft_config['account_request_repo_name']}/pull/123"
             mock_commit_sha = "abc123def456"
 
             return {
-                'success': True,  # Success for v1.0.0 mock functionality
-                'mock': True,     # Clearly indicate this is mock behavior
-                'branch_name': branch_name,
-                'pr_url': mock_pr_url,
-                'commit_sha': mock_commit_sha,
-                'message': f'✅ Migration plan prepared for {account_name} ({account_id}) -> {target_ou_name}',
-                'note': 'v1.0.0: Dry-run and planning functionality complete. GitHub integration coming in next release.'
+                "success": True,  # Success for v1.0.0 mock functionality
+                "mock": True,  # Clearly indicate this is mock behavior
+                "branch_name": branch_name,
+                "pr_url": mock_pr_url,
+                "commit_sha": mock_commit_sha,
+                "message": f"✅ Migration plan prepared for {account_name} ({account_id}) -> {target_ou_name}",
+                "note": "v1.0.0: Dry-run and planning functionality complete. GitHub integration coming in next release.",
             }
 
         except Exception as e:
-            return {
-                'success': False,
-                'error': str(e)
-            }
+            return {"success": False, "error": str(e)}
 
     def get_migration_status(
-        self,
-        account_id: Optional[str] = None,
-        ou_filter: Optional[str] = None
+        self, account_id: Optional[str] = None, ou_filter: Optional[str] = None
     ) -> Dict[str, Any]:
         """Get migration status and ongoing operations"""
         try:
@@ -690,21 +705,23 @@ resource "aws_organizations_account" "account_{account_id}" {{
             recent_migrations = []
 
             # Mock some data for demonstration
-            if not account_id:  # Only show mock data when not filtering by specific account
+            if (
+                not account_id
+            ):  # Only show mock data when not filtering by specific account
                 recent_migrations = [
                     {
-                        'account_name': 'example-dev',
-                        'account_id': '123456789012',
-                        'source_ou': 'Development',
-                        'target_ou': 'Sandbox',
-                        'status': 'SUCCESS',
-                        'completed_at': '2025-01-07T10:30:00Z'
+                        "account_name": "example-dev",
+                        "account_id": "123456789012",
+                        "source_ou": "Development",
+                        "target_ou": "Sandbox",
+                        "status": "SUCCESS",
+                        "completed_at": "2025-01-07T10:30:00Z",
                     }
                 ]
 
             return {
-                'ongoing_migrations': ongoing_migrations,
-                'recent_migrations': recent_migrations
+                "ongoing_migrations": ongoing_migrations,
+                "recent_migrations": recent_migrations,
             }
 
         except Exception as e:
@@ -714,6 +731,7 @@ resource "aws_organizations_account" "account_{account_id}" {{
         """Get the current CLI version dynamically"""
         try:
             from lzaas import __version__
+
             return __version__
         except ImportError:
             return "unknown"
