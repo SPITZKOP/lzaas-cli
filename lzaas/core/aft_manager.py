@@ -451,7 +451,9 @@ class AFTManager:
                 except Exception as e:
                     # Log the error but continue processing other OUs
                     # This is typically due to permission issues or API throttling
-                    logger.debug(f"Failed to list organizational units for parent {parent_id}: {e}")
+                    logger.debug(
+                        f"Failed to list organizational units for parent {parent_id}: {e}"
+                    )
 
                 return ous
 
