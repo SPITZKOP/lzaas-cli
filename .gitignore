@@ -11,6 +11,9 @@ documents-helpers/
 README.md.back
 GITHUB_ACTIONS_TROUBLESHOOTING.md
 
+#Artifacts
+bandit-report.json
+
 # Distribution / packaging
 .Python
 build/

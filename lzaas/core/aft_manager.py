@@ -4,6 +4,7 @@ Handles DynamoDB operations, GitHub integration, and AFT pipeline management
 """
 
 import json
+import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -12,6 +13,9 @@ import yaml
 from botocore.exceptions import ClientError, NoCredentialsError
 
 from lzaas.core.models import AccountRequest, AFTStatus
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 
 class AFTManager:
@@ -444,8 +448,10 @@ class AFTManager:
                             child_ous = get_ous_recursive(ou["Id"], level + 1)
                             ous.extend(child_ous)
 
-                except Exception:
-                    pass
+                except Exception as e:
+                    # Log the error but continue processing other OUs
+                    # This is typically due to permission issues or API throttling
+                    logger.debug(f"Failed to list organizational units for parent {parent_id}: {e}")
 
                 return ous
 
